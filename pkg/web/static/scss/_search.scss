@@ -1,0 +1,75 @@
+// ==========================================================================
+// Mediathek 3D SCSS Search Bar & Autocomplete Dropdown
+// ==========================================================================
+
+#search-container {
+    position: relative;
+    width: 320px;
+    max-width: 100%;
+}
+
+.search-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+
+    input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        padding: 6px 8px;
+
+        &::placeholder {
+            color: var(--text-muted);
+        }
+    }
+}
+
+.search-icon {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+#search-results {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 20;
+    padding: 4px;
+}
+
+.search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.15s ease;
+
+    &:hover, &.active {
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    &.no-match {
+        color: var(--text-muted);
+        cursor: default;
+    }
+}
+
+.search-box-id {
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.search-box-meta {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "mediathek3d",
+  "version": "2.0.0",
+  "private": true,
+  "description": "HGK Mediathek 3D Web Viewer",
+  "scripts": {
+    "build:sass": "sass pkg/web/static/scss/mediathek3d.scss:pkg/web/static/scss/mediathek3d.css",
+    "watch:sass": "sass --watch pkg/web/static/scss/mediathek3d.scss:pkg/web/static/scss/mediathek3d.css"
+  },
+  "devDependencies": {
+    "sass": "^1.108.2"
+  }
+}

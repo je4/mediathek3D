@@ -1,0 +1,56 @@
+{{define "help_modal"}}
+<!-- Help & Keyboard Shortcuts Modal Dialog -->
+<div id="help-modal" class="d-none">
+    <div class="modal-card glass-panel">
+        <div class="modal-header">
+            <h2 class="modal-title">3D Viewer Navigation & Shortcuts</h2>
+            <button id="help-close-btn" class="drawer-close" aria-label="Close Help">×</button>
+        </div>
+
+        <table class="shortcuts-table">
+            <tbody>
+                <tr>
+                    <td><strong>Orbit / Rotate</strong></td>
+                    <td>Left Click + Drag</td>
+                </tr>
+                <tr>
+                    <td><strong>Pan / Move</strong></td>
+                    <td>Right Click + Drag (or Two-Finger Drag)</td>
+                </tr>
+                <tr>
+                    <td><strong>Zoom</strong></td>
+                    <td>Mouse Scroll Wheel (or Pinch Gesture)</td>
+                </tr>
+                <tr>
+                    <td><strong>Select Box</strong></td>
+                    <td>Click on any shelf box to highlight & focus</td>
+                </tr>
+                <tr>
+                    <td><strong>Reset View</strong></td>
+                    <td><span class="kbd-badge">R</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Top 2D View</strong></td>
+                    <td><span class="kbd-badge">T</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Toggle Fullscreen</strong></td>
+                    <td><span class="kbd-badge">F</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Focus Search</strong></td>
+                    <td><span class="kbd-badge">/</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Close Panels</strong></td>
+                    <td><span class="kbd-badge">Esc</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+            <p><strong>Direct Links:</strong> You can link to any box by URL hash (e.g. <code>#A101</code>) or query parameter (e.g. <code>?box=A101</code>).</p>
+        </div>
+    </div>
+</div>
+{{end}}

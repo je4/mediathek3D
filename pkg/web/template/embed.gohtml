@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{.Title}} - Embed</title>
+    <link rel="stylesheet" href="{{.BaseURL}}static/scss/mediathek3d.css">
+    <style>
+        /* Embed optimizations */
+        .brand-section, #cam-json-panel {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="embed-mode">
+    <!-- 3D Rendering Canvas Viewport -->
+    <div id="renderer-container"></div>
+
+    <!-- UI Overlay HUD -->
+    {{template "hud" .}}
+
+    <!-- Help & Navigation Modal -->
+    {{template "help_modal" .}}
+
+    <!-- Three.js & Controls -->
+    <script src="{{.BaseURL}}static/js/three.min.js"></script>
+    <script src="{{.BaseURL}}static/js/OrbitControls.js"></script>
+    <script src="{{.BaseURL}}static/js/TrackballControls.js"></script>
+
+    <!-- Mediathek 3D Engine Modules -->
+    <script src="{{.BaseURL}}static/js/mediathek-core.js"></script>
+    <script src="{{.BaseURL}}static/js/mediathek-3d.js"></script>
+    <script src="{{.BaseURL}}static/js/mediathek-app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.mediathekApp = new MediathekApp({
+                containerSelector: '#renderer-container',
+                floorImage: '{{.BaseURL}}static/img/mt_background.png',
+                boxData: '{{.BaseURL}}api/boxes',
+                initialBox: '{{.Box}}',
+                initialShelf: '{{.Shelf}}',
+                camJSON: {{if .CamJSON}}'{{.CamJSON}}'{{else}}null{{end}},
+                isEmbed: true
+            });
+        });
+    </script>
+</body>
+</html>

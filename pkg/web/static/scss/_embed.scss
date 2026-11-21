@@ -1,0 +1,38 @@
+// ==========================================================================
+// Mediathek 3D SCSS Embed Mode & Responsive Layout Overrides
+// ==========================================================================
+
+body.embed-mode {
+    .top-hud {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+    }
+
+    .brand-section,
+    #cam-json-panel {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-hud {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #search-container {
+        width: 100%;
+    }
+
+    #cam-json-panel {
+        display: none;
+    }
+
+    #box-info-drawer {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        width: auto;
+    }
+}

@@ -1,0 +1,103 @@
+{{define "hud"}}
+<!-- Heads-Up Display (HUD) Navigation and Control Elements -->
+<div class="top-hud">
+    <!-- Brand Info -->
+    <div class="brand-section glass-panel">
+        <span class="brand-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            {{.Title}}
+        </span>
+        <span class="brand-badge">3D Viewer</span>
+    </div>
+
+    <!-- Live Box Search Bar -->
+    <div id="search-container" class="glass-panel">
+        <form id="search-form" autocomplete="off" onsubmit="return false;">
+            <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Search box or shelf (e.g. A101)..." aria-label="Search box">
+            </div>
+        </form>
+        <div id="search-results" class="glass-panel d-none"></div>
+    </div>
+
+    <!-- View Controls & Action Buttons -->
+    <div class="controls-hud glass-panel">
+        <!-- Shelf Filter Dropdown -->
+        <select id="shelf-filter-select" class="select-hud" aria-label="Filter Shelves">
+            <option value="">All Shelves</option>
+        </select>
+
+        <button id="btn-reset-view" class="btn-hud" title="Reset View (R)">
+            <span>⟲</span> Reset
+        </button>
+        <button id="btn-top-view" class="btn-hud" title="Top-down 2D Overview (T)">
+            <span>⬚</span> Top View
+        </button>
+        <button id="btn-screenshot" class="btn-hud" title="Capture High-Res PNG Screenshot">
+            <span>📷</span> Snapshot
+        </button>
+        <button id="btn-fullscreen" class="btn-hud" title="Toggle Fullscreen (F)">
+            <span>⛶</span> Fullscreen
+        </button>
+        <button id="btn-help" class="btn-hud btn-accent" title="Help & Navigation Shortcuts">
+            <span>?</span> Help
+        </button>
+    </div>
+</div>
+
+<!-- Floating Box Details Drawer -->
+<div id="box-info-drawer" class="glass-panel d-none">
+    <div class="drawer-header">
+        <h3 id="box-info-title" class="drawer-title">Box Info</h3>
+        <button id="box-info-close" class="drawer-close" aria-label="Close Info">×</button>
+    </div>
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="info-label">Shelf</span>
+            <span id="box-info-shelf" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Level</span>
+            <span id="box-info-level" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Index</span>
+            <span id="box-info-index" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Area</span>
+            <span id="box-info-area" class="info-value">-</span>
+        </div>
+    </div>
+    <div>
+        <span class="info-label">Direct Link</span>
+        <div><a id="box-info-link" href="#" class="info-link">#</a></div>
+    </div>
+</div>
+
+<!-- Camera Matrix JSON State Panel -->
+<div id="cam-json-panel" class="glass-panel">
+    <div class="panel-header">
+        <span>Camera Matrix (CamJSON)</span>
+    </div>
+    <textarea id="cam-json-textarea" class="cam-textarea" placeholder="Paste or view camera matrix JSON..."></textarea>
+    <div class="panel-actions">
+        <button id="cam-json-copy-btn" class="btn-hud" type="button">Copy</button>
+        <button id="cam-json-apply-btn" class="btn-hud btn-accent" type="button">Apply</button>
+    </div>
+</div>
+
+<!-- Hover Tooltip -->
+<div id="box-tooltip" class="d-none"></div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading Mediathek 3D Environment...</div>
+</div>
+{{end}}

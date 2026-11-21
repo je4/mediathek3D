@@ -1,0 +1,90 @@
+// ==========================================================================
+// Mediathek 3D SCSS Box Info Inspection Drawer
+// ==========================================================================
+
+#box-info-drawer {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 300px;
+    z-index: 10;
+    padding: 16px;
+    display: none;
+    animation: slideInUp 0.25s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.drawer-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.info-link {
+    display: inline-block;
+    color: #64b5f6;
+    text-decoration: none;
+    font-size: 0.8rem;
+    margin-top: 4px;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
