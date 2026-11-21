@@ -78,6 +78,11 @@
         transform: scale(0.97);
     }
 
+    &.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--text-primary);
+    }
+
     &.btn-accent {
         background: var(--accent-color);
         color: white;

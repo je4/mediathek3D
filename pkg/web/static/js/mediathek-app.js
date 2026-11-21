@@ -36,6 +36,7 @@ export class MediathekApp {
             initialBox: '',
             initialShelf: '',
             camJSON: null,
+            showBooks: true,
             isEmbed: false
         }, options);
 
@@ -73,6 +74,11 @@ export class MediathekApp {
             this.options.camJSON = urlParams.get('cam');
         }
 
+        if (urlParams.has('books')) {
+            const b = urlParams.get('books').toLowerCase();
+            this.options.showBooks = !(b === '0' || b === 'false' || b === 'no' || b === 'off');
+        }
+
         if (urlParams.has('mode') && urlParams.get('mode') === 'embed') {
             this.options.isEmbed = true;
         }
@@ -91,7 +97,8 @@ export class MediathekApp {
             onApplyCamJSON: (camJsonStr) => this._onApplyCamJSON(camJsonStr),
             onResetView: () => this.resetCameraView(),
             onTopView: () => this.setTopCameraView(),
-            onScreenshot: () => this.downloadScreenshot()
+            onScreenshot: () => this.downloadScreenshot(),
+            onToggleBooks: () => this.toggleBooks()
         });
     }
 
@@ -119,9 +126,10 @@ export class MediathekApp {
             floorImage: this.options.floorImage,
             boxData: this.options.boxData,
             pixelFactor: 4,
-            boxColor: 0xe0e0e0,
+            boxColor: 0xf4f5f7,
             bottomColor: 0x283744,
-            boxColorHighlight: 0xff0909,
+            boxColorHighlight: 0xff2222,
+            showBooks: this.options.showBooks !== undefined ? this.options.showBooks : true,
             drawOnly: this.options.initialShelf ? this.options.initialShelf : null,
             boxDelay: 0
         };
@@ -387,6 +395,20 @@ export class MediathekApp {
             new THREE.Vector3(0, 0, 0),
             800
         );
+    }
+
+    /**
+     * Toggles procedural book fillings visibility on and off.
+     * @param {boolean} [visible]
+     * @returns {boolean}
+     */
+    toggleBooks(visible) {
+        if (!this.mediathek3D) return false;
+        const state = (visible !== undefined) ? this.mediathek3D.setBooksVisible(visible) : this.mediathek3D.toggleBooks();
+        if (this.ui) {
+            this.ui.updateBooksToggleState(state);
+        }
+        return state;
     }
 
     /**

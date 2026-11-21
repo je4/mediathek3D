@@ -24,9 +24,9 @@ export class Mediathek3D extends THREE.Object3D {
      * @param {string|Object} [config.boxData='api/boxes'] - URL to shelf JSON or raw JSON object.
      * @param {string} [config.satImage] - Optional background satellite image URL.
      * @param {number} [config.pixelFactor=4] - Resolution multiplier for mesh and texture sharpness.
-     * @param {number} [config.boxColor=0xe0e0e0] - Default box body color.
+     * @param {number} [config.boxColor=0xf4f5f7] - Default box body color.
      * @param {number} [config.bottomColor=0x283744] - Base level / shelf bottom color.
-     * @param {number} [config.boxColorHighlight=0xff0909] - Highlight color for selected boxes.
+     * @param {number} [config.boxColorHighlight=0xff2222] - Highlight color for selected boxes.
      * @param {number} [config.boxDelay=0] - Milliseconds delay per box during progressive render (0 for instant).
      * @param {Array<string>|string} [config.drawOnly=null] - Optional filter for specific shelves/boxes.
      * @param {Function} [onReady] - Callback invoked with (this) once loading and generation completes.
@@ -46,9 +46,10 @@ export class Mediathek3D extends THREE.Object3D {
         this.boxThick = 2 * this.pixelFactor;
         this.boxDistance = 2 * this.pixelFactor;
 
-        this.boxColor = config.boxColor !== undefined ? config.boxColor : 0xe0e0e0;
+        this.boxColor = config.boxColor !== undefined ? config.boxColor : 0xf4f5f7;
         this.bottomColor = config.bottomColor !== undefined ? config.bottomColor : 0x283744;
-        this.boxColorHighlight = config.boxColorHighlight !== undefined ? config.boxColorHighlight : 0xff0909;
+        this.boxColorHighlight = config.boxColorHighlight !== undefined ? config.boxColorHighlight : 0xff2222;
+        this.showBooks = config.showBooks !== undefined ? config.showBooks : true;
 
         this.floorImage = config.floorImage || 'static/img/mt_background.png';
         this.satImage = config.satImage || null;
@@ -74,7 +75,8 @@ export class Mediathek3D extends THREE.Object3D {
             boxThick: this.boxThick,
             boxColor: this.boxColor,
             bottomColor: this.bottomColor,
-            boxColorHighlight: this.boxColorHighlight
+            boxColorHighlight: this.boxColorHighlight,
+            showBooks: this.showBooks
         });
 
         this.splineCalculator = new SplineCalculator({
@@ -143,8 +145,10 @@ export class Mediathek3D extends THREE.Object3D {
                 this.floorImage,
                 (texture) => {
                     texture.colorSpace = THREE.SRGBColorSpace;
-                    this.floorTexture = new THREE.MeshBasicMaterial({
+                    this.floorTexture = new THREE.MeshStandardMaterial({
                         map: texture,
+                        roughness: 0.7,
+                        metalness: 0.02,
                         side: THREE.FrontSide
                     });
                     resolve(texture);
@@ -352,7 +356,7 @@ export class Mediathek3D extends THREE.Object3D {
         }
 
         const material = highlight
-            ? (customColor ? new THREE.MeshLambertMaterial({ color: customColor }) : this.boxBuilder.materialBoxHighlight)
+            ? (customColor ? new THREE.MeshStandardMaterial({ color: customColor, roughness: 0.25, metalness: 0.05 }) : this.boxBuilder.materialBoxHighlight)
             : this.boxBuilder.materialBox;
 
         box.traverse((child) => {
@@ -366,6 +370,30 @@ export class Mediathek3D extends THREE.Object3D {
         } else {
             delete this.boxesHighlight[key];
         }
+    }
+
+    /**
+     * Toggles visibility of all procedural book fillings.
+     * @param {boolean} [visible] - Target visibility (optional).
+     * @returns {boolean} New visibility state.
+     */
+    setBooksVisible(visible) {
+        this.showBooks = (visible !== undefined) ? !!visible : !this.showBooks;
+        this.boxBuilder.showBooks = this.showBooks;
+        this.traverse((child) => {
+            if (child.name === "books_cluster") {
+                child.visible = this.showBooks;
+            }
+        });
+        return this.showBooks;
+    }
+
+    /**
+     * Toggles book fillings between visible and hidden.
+     * @returns {boolean} New visibility state.
+     */
+    toggleBooks() {
+        return this.setBooksVisible(!this.showBooks);
     }
 
     /**

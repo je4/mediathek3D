@@ -54,6 +54,7 @@ export class UIController {
             btnResetView: document.getElementById('btn-reset-view'),
             btnTopView: document.getElementById('btn-top-view'),
             btnScreenshot: document.getElementById('btn-screenshot'),
+            btnToggleBooks: document.getElementById('btn-toggle-books'),
             btnFullscreen: document.getElementById('btn-fullscreen'),
             btnHelp: document.getElementById('btn-help'),
             helpModal: document.getElementById('help-modal'),
@@ -154,6 +155,14 @@ export class UIController {
             });
         }
 
+        if (this.dom.btnToggleBooks) {
+            this.dom.btnToggleBooks.addEventListener('click', () => {
+                if (typeof this.options.onToggleBooks === 'function') {
+                    this.options.onToggleBooks();
+                }
+            });
+        }
+
         if (this.dom.btnFullscreen) {
             this.dom.btnFullscreen.addEventListener('click', () => {
                 this.toggleFullscreen();
@@ -182,9 +191,30 @@ export class UIController {
         }
 
         document.addEventListener('keydown', (e) => {
+            if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
             if (e.key === 'Escape') {
                 this.showHelpModal(false);
                 this.closeInfoDrawer();
+            } else if (e.key === 'b' || e.key === 'B') {
+                if (typeof this.options.onToggleBooks === 'function') {
+                    this.options.onToggleBooks();
+                }
+            } else if (e.key === 'r' || e.key === 'R') {
+                if (typeof this.options.onResetView === 'function') {
+                    this.options.onResetView();
+                }
+            } else if (e.key === 't' || e.key === 'T') {
+                if (typeof this.options.onTopView === 'function') {
+                    this.options.onTopView();
+                }
+            } else if (e.key === 'f' || e.key === 'F') {
+                this.toggleFullscreen();
+            } else if (e.key === '/') {
+                e.preventDefault();
+                if (this.dom.searchInput) {
+                    this.dom.searchInput.focus();
+                }
             }
         });
 
@@ -361,6 +391,20 @@ export class UIController {
             .catch(err => {
                 console.warn('Clipboard copy failed:', err);
             });
+    }
+
+    /**
+     * Updates visual state of book toggle button.
+     * @param {boolean} active
+     */
+    updateBooksToggleState(active) {
+        if (this.dom.btnToggleBooks) {
+            if (active) {
+                this.dom.btnToggleBooks.classList.add('active');
+            } else {
+                this.dom.btnToggleBooks.classList.remove('active');
+            }
+        }
     }
 
     /**

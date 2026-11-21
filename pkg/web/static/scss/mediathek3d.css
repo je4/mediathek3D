@@ -131,6 +131,10 @@ html, body {
 .btn-hud:active {
   transform: scale(0.97);
 }
+.btn-hud.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
 .btn-hud.btn-accent {
   background: var(--accent-color);
   color: white;

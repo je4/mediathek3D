@@ -145,6 +145,8 @@ class Mediathek {
         this.renderer.setSize(this.width, this.height);
         this.renderer.setClearColor(this.options.backgroundColor, this.options.clearAlpha);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
 
         if (this.options.shadows) {
             this.renderer.shadowMap.enabled = true;
@@ -159,24 +161,43 @@ class Mediathek {
     }
 
     /**
-     * Sets up balanced ambient and directional lighting for the scene.
+     * Sets up balanced ambient, hemisphere and directional lighting for natural daylight realism.
      * @private
      */
     _initLights() {
-        // Soft ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // Natural daylight hemisphere light (sky blue + warm floor bounce)
+        const hemiLight = new THREE.HemisphereLight(0xedf4fc, 0xe2ded7, 0.85);
+        this.scene.add(hemiLight);
+        this.lights.push(hemiLight);
+
+        // Soft ambient fill
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         this.scene.add(ambientLight);
         this.lights.push(ambientLight);
 
-        // Key directional light from top-front
-        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight1.position.set(2000, -4000, 6000);
+        // Key directional sunlight casting soft architectural shadows
+        const dirLight1 = new THREE.DirectionalLight(0xfff7ed, 1.4);
+        dirLight1.position.set(2500, -3500, 5000);
+        if (this.options.shadows) {
+            dirLight1.castShadow = true;
+            dirLight1.shadow.mapSize.width = 2048;
+            dirLight1.shadow.mapSize.height = 2048;
+            dirLight1.shadow.camera.near = 200;
+            dirLight1.shadow.camera.far = 18000;
+            dirLight1.shadow.camera.left = -4500;
+            dirLight1.shadow.camera.right = 4500;
+            dirLight1.shadow.camera.top = 4500;
+            dirLight1.shadow.camera.bottom = -4500;
+            dirLight1.shadow.bias = -0.0003;
+            dirLight1.shadow.normalBias = 0.02;
+            dirLight1.shadow.radius = 2.5;
+        }
         this.scene.add(dirLight1);
         this.lights.push(dirLight1);
 
-        // Fill directional light from opposing angle
-        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-        dirLight2.position.set(-3000, 4000, 4000);
+        // Soft fill light from opposing angle for gentle contrast
+        const dirLight2 = new THREE.DirectionalLight(0xdde8f5, 0.55);
+        dirLight2.position.set(-3000, 3000, 3500);
         this.scene.add(dirLight2);
         this.lights.push(dirLight2);
     }
