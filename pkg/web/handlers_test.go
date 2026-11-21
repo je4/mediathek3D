@@ -231,7 +231,9 @@ func TestStaticFiles(t *testing.T) {
 		"/static/js/mediathek-core.js",
 		"/static/js/mediathek-3d.js",
 		"/static/js/mediathek-app.js",
-		"/static/js/three.min.js",
+		"/static/js/three/three.module.js",
+		"/static/js/three/addons/controls/OrbitControls.js",
+		"/static/js/three/addons/controls/TrackballControls.js",
 		"/static/img/mt_background.png",
 	}
 

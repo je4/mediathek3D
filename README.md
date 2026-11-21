@@ -1,7 +1,7 @@
 # HGK Mediathek 3D Viewer
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![Three.js](https://img.shields.io/badge/Three.js-r84+-049EF4?style=flat&logo=three.js)](https://threejs.org)
+[![Three.js](https://img.shields.io/badge/Three.js-r187-049EF4?style=flat&logo=three.js)](https://threejs.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A high-performance, modern 3D web application for exploring and navigating the **HGK Mediathek** library layout and open shelving system in interactive 3D WebGL.
@@ -169,16 +169,19 @@ mediathek3D/
 │       ├── handlers.go           # Web page controllers & JSON API handlers
 │       ├── server.go             # HTTP server setup, routing, middlewares
 │       ├── static/               # Static web assets
-│       │   ├── css/mediathek3d.css
+│       │   ├── scss/             # SCSS source & compiled mediathek3d.css
 │       │   ├── data/kistendata.json
 │       │   ├── img/mt_background.png
 │       │   └── js/
-│       │       ├── three.min.js
-│       │       ├── OrbitControls.js
-│       │       ├── TrackballControls.js
-│       │       ├── mediathek-core.js   # Mediathek Three.js scene engine
-│       │       ├── mediathek-3d.js     # Mediathek3D shelf & spline generator
-│       │       └── mediathek-app.js    # UI controller, raycasting, search, HUD
+│       │       ├── three/
+│       │       │   ├── three.module.js
+│       │       │   ├── three.module.min.js
+│       │       │   └── addons/controls/
+│       │       │       ├── OrbitControls.js
+│       │       │       └── TrackballControls.js
+│       │       ├── mediathek-core.js   # Mediathek Three.js scene engine (ES6)
+│       │       ├── mediathek-3d.js     # Mediathek3D shelf & spline generator (ES6)
+│       │       └── mediathek-app.js    # UI controller, raycasting, search, HUD (ES6)
 │       └── template/             # Go HTML templates
 │           ├── index.gohtml      # Full-page interactive 3D viewer
 │           ├── embed.gohtml      # Embeddable iframe viewer

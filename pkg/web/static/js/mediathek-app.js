@@ -6,8 +6,13 @@
  * and high-resolution screenshot export.
  *
  * @author Mediathek Team / modernized for Go Templates
- * @version 2.0.0
+ * @version 2.1.0
  */
+
+import * as THREE from 'three';
+import { Mediathek } from './mediathek-core.js';
+import { Mediathek3D } from './mediathek-3d.js';
+
 class MediathekApp {
     /**
      * Initializes the complete Mediathek 3D web application.
@@ -622,7 +627,9 @@ class MediathekApp {
     }
 }
 
-// Export for global browser context
+// Export for ES Module and global browser context
+export { MediathekApp };
+
 if (typeof window !== 'undefined') {
     window.MediathekApp = MediathekApp;
 }

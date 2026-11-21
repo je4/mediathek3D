@@ -8,7 +8,7 @@ This document details the architecture, mathematical principles, and technical i
 
 The application is structured into two main tiers:
 1. **Go Web Server**: A lightweight, standalone Go HTTP daemon serving embedded HTML templates (`html/template`), embedded static assets (`embed.FS`), and JSON REST APIs.
-2. **WebGL 3D Frontend**: An ES6 class-based Three.js rendering engine with procedural spline geometry generation, dynamic canvas text labeling, raycasting, and an interactive glassmorphic HUD.
+2. **WebGL 3D Frontend**: An ES6 class-based Three.js (r187) rendering engine utilizing native browser ES modules and HTML `<script type="importmap">`, procedural spline geometry generation, dynamic canvas text labeling, raycasting, and an interactive glassmorphic HUD.
 
 ```mermaid
 flowchart TB

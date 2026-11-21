@@ -6,8 +6,13 @@
  * high-DPI scaling, smooth camera animations, raycasting, and screenshot capture.
  *
  * @author Mediathek Team / modernized for Go Templates
- * @version 2.0.0
+ * @version 2.1.0
  */
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+
 class Mediathek {
     /**
      * Creates and initializes the Mediathek 3D scene environment.
@@ -138,6 +143,7 @@ class Mediathek {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         this.renderer.setSize(this.width, this.height);
         this.renderer.setClearColor(this.options.backgroundColor, this.options.clearAlpha);
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
         if (this.options.shadows) {
             this.renderer.shadowMap.enabled = true;
@@ -181,8 +187,8 @@ class Mediathek {
     _initControls() {
         const domElement = this.renderer.domElement;
 
-        if (this.options.controlType === 'trackball' && typeof THREE.TrackballControls === 'function') {
-            this.controls = new THREE.TrackballControls(this.camera, domElement);
+        if (this.options.controlType === 'trackball') {
+            this.controls = new TrackballControls(this.camera, domElement);
             this.controls.rotateSpeed = 1.0;
             this.controls.zoomSpeed = 1.2;
             this.controls.panSpeed = 0.8;
@@ -190,8 +196,8 @@ class Mediathek {
             this.controls.noPan = false;
             this.controls.staticMoving = true;
             this.controls.dynamicDampingFactor = 0.3;
-        } else if (typeof THREE.OrbitControls === 'function') {
-            this.controls = new THREE.OrbitControls(this.camera, domElement);
+        } else {
+            this.controls = new OrbitControls(this.camera, domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
             this.controls.screenSpacePanning = true;
@@ -199,6 +205,7 @@ class Mediathek {
             this.controls.minDistance = 100;
             this.controls.maxDistance = 25000;
             this.controls.target.set(0, 0, 0);
+            this.controls.update();
         }
     }
 
@@ -476,7 +483,10 @@ class Mediathek {
     }
 }
 
-// Export for global browser context
+// Export for ES Module and global browser context
+export { Mediathek };
+
 if (typeof window !== 'undefined') {
+    window.THREE = THREE;
     window.Mediathek = Mediathek;
 }

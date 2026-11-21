@@ -22,17 +22,20 @@
     <!-- Help & Navigation Modal -->
     {{template "help_modal" .}}
 
-    <!-- Three.js & Controls -->
-    <script src="{{.BaseURL}}static/js/three.min.js"></script>
-    <script src="{{.BaseURL}}static/js/OrbitControls.js"></script>
-    <script src="{{.BaseURL}}static/js/TrackballControls.js"></script>
+    <!-- Three.js ES Modules & Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "{{.BaseURL}}static/js/three/three.module.js",
+            "three/addons/": "{{.BaseURL}}static/js/three/addons/"
+        }
+    }
+    </script>
 
-    <!-- Mediathek 3D Engine Modules -->
-    <script src="{{.BaseURL}}static/js/mediathek-core.js"></script>
-    <script src="{{.BaseURL}}static/js/mediathek-3d.js"></script>
-    <script src="{{.BaseURL}}static/js/mediathek-app.js"></script>
+    <!-- Mediathek 3D Application Entry Point -->
+    <script type="module">
+        import { MediathekApp } from '{{.BaseURL}}static/js/mediathek-app.js';
 
-    <script>
         document.addEventListener('DOMContentLoaded', function () {
             window.mediathekApp = new MediathekApp({
                 containerSelector: '#renderer-container',

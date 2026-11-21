@@ -6,8 +6,10 @@
  * filtering, and progressive rendering methods.
  *
  * @author Mediathek Team / modernized for Go Templates
- * @version 2.0.0
+ * @version 2.1.0
  */
+
+import * as THREE from 'three';
 
 /**
  * Calculates the nearest power of 2 for canvas texture dimensions.
@@ -124,6 +126,7 @@ class Mediathek3D extends THREE.Object3D {
             textureLoader.load(
                 this.floorImage,
                 (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
                     this.floorTexture = new THREE.MeshBasicMaterial({
                         map: texture,
                         side: THREE.FrontSide
@@ -142,6 +145,7 @@ class Mediathek3D extends THREE.Object3D {
                 textureLoader.load(
                     this.satImage,
                     (texture) => {
+                        texture.colorSpace = THREE.SRGBColorSpace;
                         this.satTexture = new THREE.MeshBasicMaterial({
                             map: texture,
                             side: THREE.FrontSide
@@ -388,8 +392,8 @@ class Mediathek3D extends THREE.Object3D {
 
         ctx.fillText(`    ${text}`, 5 * this.pixelFactor, canvas.height - 2);
 
-        const texture = new THREE.Texture(canvas);
-        texture.needsUpdate = true;
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
         return texture;
     }
 
@@ -402,13 +406,13 @@ class Mediathek3D extends THREE.Object3D {
             const shelf = this.theData[shelfKey];
             if (!shelf.point || shelf.point.length === 0) continue;
 
-            const spline = new THREE.CatmullRomCurve3();
+            const points = [];
             for (let i = 0; i < shelf.point.length; i++) {
                 const pt = shelf.point[i];
-                const v = new THREE.Vector3(this.calcX(pt.x), this.calcY(pt.y), 1);
-                spline.points.push(v);
+                points.push(new THREE.Vector3(this.calcX(pt.x), this.calcY(pt.y), 1));
             }
 
+            const spline = new THREE.CatmullRomCurve3(points);
             this.curves[shelfKey] = spline;
 
             // Generate levels
@@ -591,7 +595,9 @@ class Mediathek3D extends THREE.Object3D {
     }
 }
 
-// Export for global browser context
+// Export for ES Module and global browser context
+export { Mediathek3D };
+
 if (typeof window !== 'undefined') {
     window.Mediathek3D = Mediathek3D;
 }
