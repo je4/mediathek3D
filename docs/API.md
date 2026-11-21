@@ -22,6 +22,21 @@ Hides header branding and technical panels while maintaining full 3D navigation,
 
 ---
 
+### `GET /splines` or `GET /2d` or `GET /plan`
+Renders the interactive 2D floor plan visualization displaying the background image (`mt_background.png`), all control points from `kistendata.json`, and their corresponding Catmull-Rom splines.
+
+#### Supported Features:
+- Smooth Pan & Zoom (Mouse Wheel, Drag, Touch, Fit to Screen, 1:1 view).
+- Live floor coordinate tracking badge (`X: 0..2048 | Y: 0..2048`).
+- Layer visibility toggles (Background image with opacity slider, Splines, Points, Point labels, Shelf badges, Point coordinates).
+- Shelf selection, search filter, and point coordinate inspection table.
+- Interactive hover tooltips and point/spline hit-testing.
+
+#### Supported Query Parameters:
+- `shelf` (*string*, optional): Initial shelf letter to select and focus (e.g. `?shelf=A`).
+
+---
+
 ## 2. JSON REST APIs
 
 All JSON API endpoints return standard HTTP status codes and `Content-Type: application/json; charset=utf-8`.

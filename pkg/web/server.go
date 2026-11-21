@@ -52,6 +52,9 @@ func NewServer(cfg *config.Config, kistenSvc service.KistenService) (*Server, er
 	mux.HandleFunc("/3d", handlers.HandleIndex)
 	mux.HandleFunc("/3dfull", handlers.HandleIndex)
 	mux.HandleFunc("/embed", handlers.HandleEmbed)
+	mux.HandleFunc("/splines", handlers.HandleSplines)
+	mux.HandleFunc("/2d", handlers.HandleSplines)
+	mux.HandleFunc("/plan", handlers.HandleSplines)
 
 	// JSON REST API Endpoints
 	mux.HandleFunc("/api/boxes", func(w http.ResponseWriter, r *http.Request) {

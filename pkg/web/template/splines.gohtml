@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{.Title}} - Splines & Kontrollpunkte</title>
+    <link rel="stylesheet" href="{{.BaseURL}}static/scss/mediathek3d.css">
+</head>
+<body class="splines-page">
+    <!-- Top Header Navigation Bar -->
+    <header class="splines-header glass-panel">
+        <div class="splines-header-brand">
+            <span class="splines-logo-icon">📐</span>
+            <div class="splines-header-titles">
+                <h1 class="splines-title">HGK Mediathek 2D</h1>
+                <span class="splines-subtitle">Hintergrundbild, Kontrollpunkte & Catmull-Rom-Splines</span>
+            </div>
+        </div>
+
+        <div class="splines-header-center">
+            <div id="coord-display" class="splines-coords-badge" title="Aktuelle Pixelkoordinaten auf dem 2048x2048 Grundriss">
+                <span class="coord-label">Cursor:</span>
+                <span id="coord-val" class="coord-value">X: 0 | Y: 0</span>
+            </div>
+            <div id="selection-info" class="splines-selection-badge" style="display: none;">
+                <span id="selection-text"></span>
+                <button id="btn-clear-selection" class="btn-icon-sm" title="Auswahl aufheben">✕</button>
+            </div>
+        </div>
+
+        <div class="splines-header-actions">
+            <a href="{{.BaseURL}}" class="btn-primary-3d" title="Zurück zur interaktiven 3D-Ansicht">
+                <span class="btn-icon">🏛️</span> 3D-Ansicht
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Viewport Area -->
+    <main id="spline-canvas-container" class="splines-viewport">
+        <canvas id="spline-canvas"></canvas>
+
+        <!-- Floating Tooltip -->
+        <div id="spline-tooltip" class="spline-tooltip glass-panel" style="display: none;"></div>
+
+        <!-- Floating Zoom Controls -->
+        <div class="splines-zoom-controls glass-panel">
+            <button id="btn-zoom-in" class="zoom-btn" title="Vergrößern (Mausrad aufwärts)">+</button>
+            <button id="btn-zoom-out" class="zoom-btn" title="Verkleinern (Mausrad abwärts)">−</button>
+            <button id="btn-zoom-fit" class="zoom-btn zoom-btn-text" title="An Bildschirm anpassen">Fit</button>
+            <button id="btn-zoom-100" class="zoom-btn zoom-btn-text" title="100% Originalgröße (2048x2048)">1:1</button>
+        </div>
+
+        <!-- Floating Sidebar Drawer: Layers & Shelves Filter -->
+        <aside id="splines-sidebar" class="splines-sidebar glass-panel">
+            <div class="sidebar-header">
+                <h2>Steuerung & Ebenen</h2>
+                <button id="btn-toggle-sidebar" class="btn-icon-toggle" title="Seitenleiste minimieren/maximieren">◀</button>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Layer Settings -->
+                <section class="sidebar-section">
+                    <h3 class="section-title">Ebenen-Sichtbarkeit</h3>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-bg-image">
+                            <input type="checkbox" id="chk-bg-image" checked>
+                            <span>Hintergrundbild (mt_background.png)</span>
+                        </label>
+                    </div>
+                    <div class="control-row opacity-row">
+                        <label for="range-bg-opacity" class="sub-label">Deckkraft:</label>
+                        <input type="range" id="range-bg-opacity" min="0" max="100" value="85">
+                        <span id="opacity-val" class="opacity-val">85%</span>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-splines">
+                            <input type="checkbox" id="chk-splines" checked>
+                            <span>Splines (Catmull-Rom-Kurven)</span>
+                        </label>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-points">
+                            <input type="checkbox" id="chk-points" checked>
+                            <span>Kontrollpunkte (kistendata.json)</span>
+                        </label>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-point-labels">
+                            <input type="checkbox" id="chk-point-labels" checked>
+                            <span>Punkt-Nummern (P1, P2...)</span>
+                        </label>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-shelf-labels">
+                            <input type="checkbox" id="chk-shelf-labels" checked>
+                            <span>Regal-Bezeichnungen (A, B...)</span>
+                        </label>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label" for="chk-point-coords">
+                            <input type="checkbox" id="chk-point-coords">
+                            <span>Koordinaten an Punkten anzeigen</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Shelves List & Filter -->
+                <section class="sidebar-section shelves-section">
+                    <div class="section-header-flex">
+                        <h3 class="section-title">Regale (<span id="shelves-count">0</span>)</h3>
+                        <div class="btn-group-sm">
+                            <button id="btn-select-all" class="btn-text-sm" title="Alle Regale anzeigen">Alle</button>
+                            <button id="btn-deselect-all" class="btn-text-sm" title="Alle Regale ausblenden">Keine</button>
+                        </div>
+                    </div>
+
+                    <div class="search-input-wrap">
+                        <input type="text" id="shelf-search" placeholder="Regal oder Bereich filtern..." autocomplete="off">
+                    </div>
+
+                    <div id="shelves-list" class="shelves-list-container">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </section>
+
+                <!-- Selected Shelf Point Coordinates Detail View -->
+                <section id="shelf-detail-section" class="sidebar-section shelf-detail-section" style="display: none;">
+                    <div class="section-header-flex">
+                        <h3 class="section-title" id="detail-shelf-title">Regal-Details</h3>
+                        <button id="btn-close-detail" class="btn-icon-sm">✕</button>
+                    </div>
+                    <div id="detail-points-table" class="points-table-wrap">
+                        <!-- Populated dynamically -->
+                    </div>
+                </section>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Three.js ES Modules & Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "{{.BaseURL}}static/js/three/three.module.js",
+            "three/addons/": "{{.BaseURL}}static/js/three/addons/",
+            "spline-viewer": "{{.BaseURL}}static/js/spline-viewer.js"
+        }
+    }
+    </script>
+
+    <!-- Spline Viewer Entry Point -->
+    <script type="module">
+        import { SplineViewer } from 'spline-viewer';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            window.splineViewer = new SplineViewer({
+                containerSelector: '#spline-canvas-container',
+                canvasSelector: '#spline-canvas',
+                floorImage: '{{.BaseURL}}static/img/mt_background.png',
+                boxData: '{{.BaseURL}}api/boxes',
+                initialShelf: '{{.Shelf}}',
+                baseURL: '{{.BaseURL}}'
+            });
+        });
+    </script>
+</body>
+</html>

@@ -117,6 +117,39 @@ func TestEmbedPage(t *testing.T) {
 	}
 }
 
+func TestSplinesPage(t *testing.T) {
+	srv, _ := setupTestServer(t)
+	handler := srv.Handler()
+
+	testPaths := []string{"/splines", "/2d", "/plan"}
+	for _, path := range testPaths {
+		req := httptest.NewRequest("GET", path+"?shelf=A", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 for %s, got %d", path, resp.StatusCode)
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		bodyStr := string(body)
+
+		if !strings.Contains(bodyStr, "splines-page") {
+			t.Errorf("Expected 'splines-page' class on body for %s", path)
+		}
+		if !strings.Contains(bodyStr, "spline-canvas") {
+			t.Errorf("Expected 'spline-canvas' element in HTML for %s", path)
+		}
+		if !strings.Contains(bodyStr, `"spline-viewer": "./static/js/spline-viewer.js"`) {
+			t.Errorf("Expected importmap for spline-viewer for %s", path)
+		}
+		if !strings.Contains(bodyStr, `import { SplineViewer } from 'spline-viewer';`) {
+			t.Errorf("Expected SplineViewer module import in script for %s", path)
+		}
+	}
+}
+
 func TestBoxesJSONAPI(t *testing.T) {
 	srv, _ := setupTestServer(t)
 	handler := srv.Handler()
@@ -243,6 +276,7 @@ func TestStaticFiles(t *testing.T) {
 		"/static/js/mediathek-core.js",
 		"/static/js/mediathek-3d.js",
 		"/static/js/mediathek-app.js",
+		"/static/js/spline-viewer.js",
 		"/static/js/modules/math.js",
 		"/static/js/modules/box-builder.js",
 		"/static/js/modules/spline-calculator.js",

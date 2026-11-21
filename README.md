@@ -64,6 +64,7 @@ The application supports direct deep linking via URL query parameters and locati
 | `?shelf=<shelves>` | `http://localhost:8080/?shelf=A,B` | Filters display to render only specific shelf units. |
 | `?cam=<camJSON>` | `http://localhost:8080/?cam=[...]` | Initializes camera with a specific 16-element matrix JSON array. |
 | `/embed` | `http://localhost:8080/embed?box=A101` | Clean embeddable mode without headers, optimized for iframes. |
+| `/splines` | `http://localhost:8080/splines` | Interactive 2D floor plan viewer showing background, points, and Catmull-Rom splines. |
 
 ---
 

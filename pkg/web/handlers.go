@@ -113,6 +113,11 @@ func (h *Handlers) HandleEmbed(w http.ResponseWriter, r *http.Request) {
 	h.renderTemplate(w, r, "embed.gohtml", true)
 }
 
+// HandleSplines renders the 2D spline and control point visualization page.
+func (h *Handlers) HandleSplines(w http.ResponseWriter, r *http.Request) {
+	h.renderTemplate(w, r, "splines.gohtml", false)
+}
+
 func (h *Handlers) renderTemplate(w http.ResponseWriter, r *http.Request, templateName string, isEmbed bool) {
 	q := r.URL.Query()
 	box := strings.TrimSpace(q.Get("box"))
