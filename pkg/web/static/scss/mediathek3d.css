@@ -416,10 +416,13 @@ html, body {
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(6px);
   z-index: 200;
-  display: none;
+  display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
+}
+#help-modal.hidden, #help-modal.d-none {
+  display: none !important;
 }
 
 .modal-card {

@@ -204,6 +204,12 @@ export class UIController {
                 if (typeof this.options.onCycleTheme === 'function') {
                     this.options.onCycleTheme();
                 }
+            } else if (e.key === 'h' || e.key === 'H' || e.key === '?') {
+                const isVisible = this.dom.helpModal &&
+                    !this.dom.helpModal.classList.contains('d-none') &&
+                    !this.dom.helpModal.classList.contains('hidden') &&
+                    this.dom.helpModal.style.display !== 'none';
+                this.showHelpModal(!isVisible);
             } else if (e.key === '/') {
                 e.preventDefault();
                 if (this.dom.searchInput) {
@@ -349,8 +355,10 @@ export class UIController {
     showHelpModal(show = true) {
         if (!this.dom.helpModal) return;
         if (show) {
+            this.dom.helpModal.style.display = 'flex';
             this.dom.helpModal.classList.remove('d-none', 'hidden');
         } else {
+            this.dom.helpModal.style.display = 'none';
             this.dom.helpModal.classList.add('d-none', 'hidden');
         }
     }

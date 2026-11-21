@@ -150,7 +150,7 @@ class Mediathek {
 
         if (this.options.shadows) {
             this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.shadowMap.type = THREE.PCFShadowMap;
         }
 
         // Clear existing canvas in container if any
