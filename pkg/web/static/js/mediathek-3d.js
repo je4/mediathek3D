@@ -37,6 +37,7 @@ export class Mediathek3D extends THREE.Object3D {
      * @param {Object} config - Configuration settings.
      * @param {string} [config.floorImage='static/img/mt_background.png'] - URL to floor plan image.
      * @param {string|Object} [config.boxData='api/boxes'] - URL to shelf JSON or raw JSON object.
+     * @param {string|Object} [config.positionsData='static/data/kistenpositions.json'] - URL to precomputed box positions or raw JSON object.
      * @param {string} [config.satImage] - Optional background satellite image URL.
      * @param {number} [config.pixelFactor=4] - Resolution multiplier for mesh and texture sharpness.
      * @param {number} [config.boxColor=0xf4f5f7] - Default box body color.
@@ -68,11 +69,13 @@ export class Mediathek3D extends THREE.Object3D {
         this.floorImage = config.floorImage || 'static/img/mt_background.png';
         this.satImage = config.satImage || null;
         this.boxData = config.boxData || 'api/boxes';
+        this.positionsData = config.positionsData !== undefined ? config.positionsData : 'static/data/kistenpositions.json';
         this.drawOnly = config.drawOnly ? (Array.isArray(config.drawOnly) ? config.drawOnly : [config.drawOnly]) : null;
         this.boxDelay = config.boxDelay !== undefined ? config.boxDelay : 0;
 
         // Data containers
         this.theData = null;
+        this.precomputedPositions = null;
         this.floorTexture = null;
         this.satTexture = null;
         this.curves = {};
@@ -219,8 +222,35 @@ export class Mediathek3D extends THREE.Object3D {
                 });
         }
 
+        // 4. Attempt to load precomputed box positions (fast path with graceful browser fallback)
+        let loadPositionsPromise = Promise.resolve(null);
+        if (this.positionsData) {
+            if (typeof this.positionsData === 'object' && this.positionsData !== null) {
+                this.precomputedPositions = this.positionsData;
+                loadPositionsPromise = Promise.resolve(this.precomputedPositions);
+            } else {
+                loadPositionsPromise = fetch(this.positionsData)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && Array.isArray(data.boxes) && data.boxes.length > 0) {
+                            this.precomputedPositions = data;
+                            return data;
+                        }
+                        return null;
+                    })
+                    .catch(err => {
+                        console.info('Precomputed box positions not available, falling back to browser-side calculation:', err.message);
+                        this.precomputedPositions = null;
+                        return null;
+                    });
+            }
+        }
+
         try {
-            await Promise.all([loadFloorPromise, loadSatPromise, loadDataPromise]);
+            await Promise.all([loadFloorPromise, loadSatPromise, loadDataPromise, loadPositionsPromise]);
             this._buildScene();
         } catch (err) {
             console.error('Mediathek3D loading error:', err);
@@ -233,7 +263,7 @@ export class Mediathek3D extends THREE.Object3D {
      * Algorithmic steps:
      * 1. Constructs the main floor plane (`floorHeight x floorHeight`) centered at (0, 0, 0).
      * 2. Optionally attaches the satellite overview plane positioned at `z = -2 * floorHeight`.
-     * 3. Calls `_generateShelves()` to compute 3D splines and box geometries.
+     * 3. Instantiates boxes from precomputed JSON transforms (fast path) or dynamically via `_generateShelves()` (fallback).
      * 4. Dispatches rendering: instant batch addition if `boxDelay <= 0`, or progressive queue via `renderBoxes()`.
      * 5. Triggers `onReady` lifecycle callback.
      *
@@ -261,8 +291,22 @@ export class Mediathek3D extends THREE.Object3D {
             this.add(satMesh);
         }
 
-        // Generate shelf boxes along curves
-        this._generateShelves();
+        // Initialize curves for spatial queries
+        for (const shelfKey in this.theData) {
+            const shelf = this.theData[shelfKey];
+            if (!shelf.point || shelf.point.length === 0) continue;
+            const spline = this.splineCalculator.createCurveFromPoints(shelf.point);
+            if (spline) {
+                this.curves[shelfKey] = spline;
+            }
+        }
+
+        // Generate shelf boxes (from precomputed positions or dynamic fallback)
+        if (this.precomputedPositions && Array.isArray(this.precomputedPositions.boxes)) {
+            this._generateShelvesFromPrecomputed(this.precomputedPositions);
+        } else {
+            this._generateShelves();
+        }
 
         // Render boxes (instant or progressive)
         if (this.boxDelay <= 0) {
@@ -276,6 +320,57 @@ export class Mediathek3D extends THREE.Object3D {
 
         if (typeof this.onReady === 'function') {
             this.onReady(this);
+        }
+    }
+
+    /**
+     * Instantiates boxes directly from precomputed position and orientation data.
+     * Bypasses client-side spline computation for maximum performance and instant TTI.
+     *
+     * @param {Object} precomputedData - Precomputed positions object.
+     * @private
+     */
+    _generateShelvesFromPrecomputed(precomputedData) {
+        const boxes = precomputedData.boxes || [];
+
+        for (let i = 0; i < boxes.length; i++) {
+            const item = boxes[i];
+            const boxname1 = item.id;
+            const boxname2 = item.id2 || boxname1;
+            const shelfKey = item.shelf || boxname1.charAt(0);
+            const levelNum = item.level || parseInt(boxname1.charAt(1), 10) || 1;
+
+            let box = null;
+            if (this.drawOnly === null) {
+                box = this.createBox(boxname1, boxname2);
+            } else {
+                let match = false;
+                for (let j = 0; j < this.drawOnly.length; j++) {
+                    const filter = this.drawOnly[j];
+                    if (filter === boxname1 || filter === boxname2 || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (match) {
+                    box = this.createBox(boxname1, boxname2);
+                } else if (levelNum === 1) {
+                    box = this.createBottom(boxname1, boxname2);
+                } else {
+                    continue;
+                }
+            }
+
+            if (item.position && item.position.length >= 3) {
+                box.position.set(item.position[0], item.position[1], item.position[2]);
+            }
+            if (item.quaternion && item.quaternion.length >= 4) {
+                box.quaternion.set(item.quaternion[0], item.quaternion[1], item.quaternion[2], item.quaternion[3]);
+            }
+            box.name = boxname1;
+
+            this.boxes[boxname1] = box;
+            this.boxNames.push(boxname1);
         }
     }
 

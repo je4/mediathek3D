@@ -23,6 +23,7 @@ export class MediathekApp {
      * @param {string} [options.containerSelector='#renderer-container'] Viewport container selector.
      * @param {string} [options.floorImage='static/img/mt_background.png'] Floor map image path.
      * @param {string} [options.boxData='api/boxes'] Shelf geometry JSON endpoint.
+     * @param {string} [options.positionsData='static/data/kistenpositions.json'] Precomputed box positions endpoint.
      * @param {string} [options.initialBox=''] Initially highlighted box (from URL or Go template).
      * @param {Array<string>|string} [options.initialShelf=''] Initial shelf filter.
      * @param {string} [options.camJSON=null] Initial camera JSON matrix string.
@@ -33,6 +34,7 @@ export class MediathekApp {
             containerSelector: '#renderer-container',
             floorImage: 'static/img/mt_background.png',
             boxData: 'api/boxes',
+            positionsData: 'static/data/kistenpositions.json',
             initialBox: '',
             initialShelf: '',
             camJSON: null,
@@ -118,6 +120,7 @@ export class MediathekApp {
         const mediathek3DConfig = {
             floorImage: this.options.floorImage,
             boxData: this.options.boxData,
+            positionsData: this.options.positionsData,
             pixelFactor: 4,
             boxColor: 0xf4f5f7,
             bottomColor: 0x283744,

@@ -196,10 +196,23 @@ mediathek3D/
 ├── docs/
 │   ├── ARCHITECTURE.md           # Detailed architecture & 3D math
 │   ├── API.md                    # REST API & URL parameter reference
+│   ├── PRECOMPUTE.md             # Precomputed box positions & workflow
 │   └── USER_GUIDE.md             # User navigation & keyboard shortcuts guide
 ├── go.mod
 └── README.md
 ```
+
+---
+
+## Precomputing Box Positions
+
+To optimize performance and Time-to-Interactive (TTI), 3D box coordinates and rotations are precalculated into `kistenpositions.json`. If `kistendata.json` is modified, run:
+
+```bash
+npm run precompute
+```
+
+If the precomputed JSON is not available at runtime, the browser seamlessly falls back to dynamic client-side computation. See [docs/PRECOMPUTE.md](docs/PRECOMPUTE.md) for details.
 
 ---
 
@@ -216,6 +229,7 @@ go test -v ./...
 ## Documentation
 
 - [Architecture & Technical Design (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)
+- [Precomputation Workflow (docs/PRECOMPUTE.md)](docs/PRECOMPUTE.md)
 - [REST API Reference (docs/API.md)](docs/API.md)
 - [User Navigation Guide (docs/USER_GUIDE.md)](docs/USER_GUIDE.md)
 
