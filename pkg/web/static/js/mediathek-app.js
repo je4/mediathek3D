@@ -350,13 +350,28 @@ export class MediathekApp {
         const metadata = this.mediathek3D.getBoxMetadata(cleanId) || { id: cleanId };
         this.ui.showInfoDrawer(metadata);
 
-        // Smooth camera transition toward selected box
-        if (animateCamera && this.mediathek.controls) {
-            this.mediathek.animateCameraTo(
-                new THREE.Vector3(worldPos.x, worldPos.y - 800, worldPos.z + 600),
-                worldPos,
-                1000
+        // Smooth camera transition toward selected box from current viewing side
+        if (animateCamera && this.mediathek.controls && this.mediathek.camera) {
+            const focus = this.mediathek3D.getBoxFocusTransform(
+                cleanId,
+                this.mediathek.camera.position,
+                750,
+                280
             );
+
+            if (focus) {
+                this.mediathek.animateCameraTo(
+                    focus.cameraPos,
+                    focus.targetPos,
+                    800
+                );
+            } else {
+                this.mediathek.animateCameraTo(
+                    new THREE.Vector3(worldPos.x, worldPos.y - 800, worldPos.z + 600),
+                    worldPos,
+                    800
+                );
+            }
         }
 
         this._syncCamJSON();

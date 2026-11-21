@@ -321,9 +321,6 @@ export class Mediathek3D extends THREE.Object3D {
             box.name = boxname1;
 
             this.boxes[boxname1] = box;
-            if (boxname2 !== boxname1) {
-                this.boxes[boxname2] = box;
-            }
             this.boxNames.push(boxname1);
         }
     }
@@ -462,6 +459,60 @@ export class Mediathek3D extends THREE.Object3D {
         if (!boxname) return null;
         const box = this.boxes[boxname.toUpperCase()];
         return box ? box.userData : null;
+    }
+
+    /**
+     * Computes the ideal camera position and target to view a specific box from the camera's current viewing side.
+     * Guarantees that the camera stays on the active side and never flips to the back of the shelf.
+     *
+     * @param {string} boxId - Box identifier.
+     * @param {THREE.Vector3} [currentCamPos] - Current camera position in world space.
+     * @param {number} [viewDistance=750] - Distance from box along shelf opening normal.
+     * @param {number} [elevation=280] - Height offset above box center.
+     * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null}
+     */
+    getBoxFocusTransform(boxId, currentCamPos = null, viewDistance = 750, elevation = 280) {
+        if (!boxId || !this.boxes) return null;
+        const key = boxId.toUpperCase();
+        const box = this.boxes[key];
+        if (!box) return null;
+
+        const worldPos = new THREE.Vector3();
+        box.getWorldPosition(worldPos);
+
+        const boxCenter = worldPos.clone().add(
+            new THREE.Vector3(0, 0, (this.boxHeight || 80) / 2)
+        );
+
+        // Box local X-axis is perpendicular to the shelf spline (opening normal)
+        const boxQuat = new THREE.Quaternion();
+        box.getWorldQuaternion(boxQuat);
+        const normal = new THREE.Vector3(1, 0, 0).applyQuaternion(boxQuat);
+        normal.z = 0;
+        if (normal.lengthSq() > 0.0001) {
+            normal.normalize();
+        } else {
+            normal.set(0, -1, 0);
+        }
+
+        // Determine which side of the shelf the camera is currently on
+        let sideNormal = normal.clone();
+        if (currentCamPos) {
+            const toCam = currentCamPos.clone().sub(boxCenter);
+            toCam.z = 0;
+            if (toCam.dot(normal) < 0) {
+                sideNormal.negate();
+            }
+        }
+
+        const cameraPos = boxCenter.clone()
+            .add(sideNormal.multiplyScalar(viewDistance))
+            .add(new THREE.Vector3(0, 0, elevation));
+
+        return {
+            cameraPos,
+            targetPos: boxCenter
+        };
     }
 }
 
