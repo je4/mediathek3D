@@ -1,9 +1,24 @@
 /**
  * Mediathek3D - 3D Architectural & Shelving Visualization Component.
  *
- * Coordinates floor and satellite map planes, procedural Catmull-Rom spline generation,
- * open-shelf box instantiations, raycasting selection, box highlighting,
- * and progressive rendering.
+ * Core responsibilities & algorithmic pipeline:
+ * 1. Asset & Coordinate Orchestration:
+ *    - Loads 2D floor plans, satellite planes, and shelf definitions asynchronously.
+ *    - Transforms 2D image-space coordinates into a centered, scaled 3D Cartesian coordinate system.
+ * 2. Procedural Spline & Shelf Generation:
+ *    - Fits smooth 3D Catmull-Rom spline curves through shelf control points.
+ *    - Calculates equidistant sample points, tangent vectors, and rotation quaternions per box level.
+ *    - Applies dual-sided box numbering (`boxname1` / `boxname2`) for double-sided shelf access.
+ * 3. Progressive & Filtered Rendering:
+ *    - Supports instant batch rendering or throttled progressive box streaming (`renderBoxes`).
+ *    - Dynamically builds bottom shelf plates (`createBottom`) when selective filtering (`drawOnly`) is active.
+ * 4. Dual-Index Searching & Highlighting:
+ *    - Fast lookup and visual state management for both front and back box identifiers.
+ * 5. Adaptive Obstacle-Aware Camera Focusing (`getBoxFocusTransform`):
+ *    - Calculates shelf opening normal vectors from box orientation.
+ *    - Guarantees viewing-side preservation (avoids clipping through shelves to the back).
+ *    - Performs corridor scanning to measure aisle clearance against currently rendered shelves.
+ *    - Computes dynamic elevation adjustments for narrow aisles and runs Line-of-Sight (LOS) Raycasting.
  *
  * @module mediathek-3d
  * @author Mediathek Team / modernized for Go Templates
@@ -134,6 +149,14 @@ export class Mediathek3D extends THREE.Object3D {
 
     /**
      * Loads the floor texture and shelf data asynchronously.
+     *
+     * Pipeline:
+     * 1. Floor texture: loaded into a MeshStandardMaterial (sRGB color space, roughness: 0.7) for realistic lighting.
+     * 2. Satellite texture: optional low-altitude background plane below the main floor.
+     * 3. Box data: parsed from direct object or fetched via REST API endpoint.
+     *
+     * Once all promises resolve, `_buildScene()` is invoked to construct the 3D graph.
+     *
      * @private
      */
     async _loadAssets() {
@@ -205,6 +228,14 @@ export class Mediathek3D extends THREE.Object3D {
 
     /**
      * Builds floor mesh, satellite mesh, and shelf spline curves once assets are ready.
+     *
+     * Algorithmic steps:
+     * 1. Constructs the main floor plane (`floorHeight x floorHeight`) centered at (0, 0, 0).
+     * 2. Optionally attaches the satellite overview plane positioned at `z = -2 * floorHeight`.
+     * 3. Calls `_generateShelves()` to compute 3D splines and box geometries.
+     * 4. Dispatches rendering: instant batch addition if `boxDelay <= 0`, or progressive queue via `renderBoxes()`.
+     * 5. Triggers `onReady` lifecycle callback.
+     *
      * @private
      */
     _buildScene() {
@@ -248,7 +279,13 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Generates CatmullRom splines for each shelf path and populates levels.
+     * Iterates through shelf datasets and builds 3D Catmull-Rom spline curves.
+     *
+     * For each shelf key (A–T, Y):
+     * - Converts 2D control points into 3D world points (`calcX`, `calcY`).
+     * - Fits a smooth 3D CatmullRomCurve3 via `SplineCalculator`.
+     * - Iterates through each level definition (`shelf.level[1..N]`) and delegates to `_addBoxLevel()`.
+     *
      * @private
      */
     _generateShelves() {
@@ -270,7 +307,28 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Calculates positions, tangent alignment, and instantiates boxes for a specific shelf level.
+     * Calculates positions, tangent alignments, and instantiates boxes for a specific shelf level.
+     *
+     * Algorithmic Details:
+     * 1. Dual-Sided Numbering:
+     *    - Side 1 (Front opening): index `counter + 1` (e.g. "S101").
+     *    - Side 2 (Back opening): index `totalBoxes - counter` (e.g. "S110").
+     *    - Ensures physical consistency where opposite shelf openings match corresponding aisle indexes.
+     * 2. Selective Filtering (`drawOnly`):
+     *    - If filter active and box matches: instantiates standard hollow box (`createBox`).
+     *    - If filter active and box does not match on Level 1: instantiates floor plate (`createBottom`) to maintain spatial structure.
+     *    - If filter active and level > 1 doesn't match: skipped.
+     * 3. Spline Arc-Length Parametrization & Transformation:
+     *    - Samples spline at `t = (indent + counter * (boxWidth + boxDistance)) / splineLength`.
+     *    - Extracts point on curve and tangent vector.
+     *    - Computes rotation quaternion: aligns local Y to curve tangent and local Z to world up (0, 0, 1).
+     * 4. Level Elevation:
+     *    - Sets `z = (levelNum - 1) * (boxHeight + boxThick) + (boxHeight / 2)`.
+     * 5. Collision-Free Unique Key Registration:
+     *    - Registers box in `this.boxes[boxname1]` using primary key only, preventing key collision overrides.
+     *
+     * @param {string} shelfKey - Shelf letter (e.g. 'S', 'A').
+     * @param {string|number} levelKey - Shelf level number (e.g. '1', '2').
      * @private
      */
     _addBoxLevel(shelfKey, levelKey) {
@@ -326,8 +384,10 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Progressively adds boxes to the scene with a staggered timeout.
-     * @param {number} index Current boxNames index.
+     * Progressively streams boxes into the 3D scene graph with a staggered time delay.
+     * Prevents browser UI thread blocking when rendering complex multi-shelf scenes.
+     *
+     * @param {number} [index=0] - Current index in `this.boxNames` array.
      */
     renderBoxes(index = 0) {
         if (index >= this.boxNames.length) return;
@@ -344,11 +404,16 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Highlights or unhighlights a box by ID.
+     * Highlights or unhighlights a box by ID across both opening sides.
      *
-     * @param {string} boxname Box ID (e.g. "A101").
-     * @param {boolean} [highlight=true] True to highlight, false to restore normal color.
-     * @param {number} [customColor=null] Optional custom hex color.
+     * Algorithmic Details:
+     * 1. Traverses the box's child meshes ('top', 'bottom', 'left', 'right') and swaps their active material.
+     * 2. Synchronizes both primary ID (e.g. "S101") and secondary ID (e.g. "S110") in `this.boxesHighlight`
+     *    so that queries from either side reflect the same visual highlight state.
+     *
+     * @param {string} boxname - Box ID (e.g. "A101" or "A107").
+     * @param {boolean} [highlight=true] - True to apply highlight material; false to restore standard PBR material.
+     * @param {number} [customColor=null] - Optional custom hex color override.
      */
     boxHighlight(boxname, highlight = true, customColor = null) {
         if (!boxname) return;
@@ -395,9 +460,9 @@ export class Mediathek3D extends THREE.Object3D {
     /**
      * Selects and focuses on a box, clearing previous highlights and returning its world position.
      *
-     * @param {string} boxname Box ID (e.g. "A101" or "A107").
-     * @param {number} [color=null] Optional highlight color.
-     * @returns {THREE.Vector3|null} The world position of the box or null if not found.
+     * @param {string} boxname - Box ID (e.g. "A101" or "A107").
+     * @param {number} [color=null] - Optional custom highlight color.
+     * @returns {THREE.Vector3|null} The world position vector of the box, or null if not found.
      */
     selectBox(boxname, color = null) {
         if (!boxname) return null;
@@ -414,9 +479,9 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Searches available boxes by prefix or full identifier (matching both side IDs).
+     * Searches available boxes by prefix or substring, matching against both opening sides (`id` and `id2`) and area names.
      *
-     * @param {string} query Search substring (case-insensitive).
+     * @param {string} query - Search query substring (case-insensitive).
      * @returns {Array<Object>} List of matching box metadata objects.
      */
     searchBoxes(query) {
@@ -452,8 +517,8 @@ export class Mediathek3D extends THREE.Object3D {
     /**
      * Retrieves metadata associated with a box.
      *
-     * @param {string} boxname
-     * @returns {Object|null}
+     * @param {string} boxname - Box ID (e.g. "A101").
+     * @returns {Object|null} Box metadata dictionary or null.
      */
     getBoxMetadata(boxname) {
         if (!boxname) return null;
@@ -462,16 +527,52 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Computes the ideal camera position and target to view a specific box from the camera's current viewing side.
-     * Guarantees that the camera stays on the active side and never flips to the back of the shelf.
+     * Adaptive Camera Focus & Perspective Transformation Algorithm.
      *
-     * @param {string} boxId - Box identifier.
-     * @param {THREE.Vector3} [currentCamPos] - Current camera position in world space.
-     * @param {number} [viewDistance=750] - Distance from box along shelf opening normal.
-     * @param {number} [elevation=280] - Height offset above box center.
-     * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null}
+     * Computes the optimal camera position and target vector to view a selected box with maximum
+     * spatial clarity and ergonomic framing.
+     *
+     * Algorithmic Pipeline:
+     * -------------------------------------------------------------------------------------------------
+     * 1. Box World Position & Opening Normal:
+     *    - Determines `boxCenter` in 3D world coordinates.
+     *    - Obtains the box world rotation quaternion and rotates unit vector `(1, 0, 0)` to find the
+     *      opening normal vector perpendicular to the shelf's spline path.
+     *
+     * 2. Viewing-Side Preservation (Anti-Flip Guarantee):
+     *    - Calculates vector `toCam = currentCamPos - boxCenter` in the XY ground plane.
+     *    - If `toCam · normal < 0`, the camera is currently looking from the opposite side; `sideNormal` is inverted.
+     *    - Guarantees the camera never crosses through the shelf spine to the opposite side.
+     *
+     * 3. Corridor Scanning against Visible Scene Geometry:
+     *    - Iterates over all actively rendered, visible boxes (`box.parent && box.visible !== false`).
+     *    - Projects other box positions into the selected box's local corridor frame:
+     *      `projDist = dot(delta, sideNormal)` (distance along viewing direction)
+     *      `lateralDist = abs(dot(delta, perpVector))` (lateral distance from viewing axis)
+     *    - Identifies obstacles in front of the box (`projDist ∈ [50, 2500]` and `lateralDist < 340`).
+     *    - Tracks `minObstacleDist` (aisle width) and `obstacleMaxTopZ` (highest obstructing shelf point).
+     *
+     * 4. Distance & Elevation Optimization:
+     *    - In wide/open spaces (`minObstacleDist == Infinity`): uses `preferredDistance` (default 1150) and `baseElevation` (320).
+     *    - In narrow aisles:
+     *      a) Calculates safe aisle distance: `minObstacleDist - boxDepth / 2 - 80`.
+     *      b) Computes aisle tightness factor `[0..1]` and scales camera elevation upward.
+     *      c) Calculates required Line-of-Sight (LOS) elevation over opposite shelves via similar triangles:
+     *         `overShelfElevation = (obstacleTopZ - boxCenter.z) * (prefDist / minObstacleDist) + 40`.
+     *
+     * 5. Raycasting Line-of-Sight (LOS) Validation:
+     *    - Casts a ray from `cameraPos` to `boxCenter` against visible shelf meshes.
+     *    - If blocked by another shelf, dynamically steps the camera higher and adjusts aisle distance
+     *      until an unblocked line of sight is achieved.
+     * -------------------------------------------------------------------------------------------------
+     *
+     * @param {string} boxId - Box identifier (e.g. "S105").
+     * @param {THREE.Vector3} [currentCamPos=null] - Current camera position in world coordinates.
+     * @param {number} [preferredDistance=1150] - Desired camera distance along shelf opening normal in open space.
+     * @param {number} [baseElevation=320] - Base height offset above box center in open space.
+     * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null} Computed camera transform or null.
      */
-    getBoxFocusTransform(boxId, currentCamPos = null, viewDistance = 750, elevation = 280) {
+    getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1150, baseElevation = 320) {
         if (!boxId || !this.boxes) return null;
         const key = boxId.toUpperCase();
         const box = this.boxes[key];
@@ -480,10 +581,13 @@ export class Mediathek3D extends THREE.Object3D {
         const worldPos = new THREE.Vector3();
         box.getWorldPosition(worldPos);
 
+        const boxHeight = this.boxHeight || 80;
+        const boxDepth = this.boxDepth || 120;
         const boxCenter = worldPos.clone().add(
-            new THREE.Vector3(0, 0, (this.boxHeight || 80) / 2)
+            new THREE.Vector3(0, 0, boxHeight / 2)
         );
 
+        // --- Step 1: Shelf opening normal from box orientation ---
         // Box local X-axis is perpendicular to the shelf spline (opening normal)
         const boxQuat = new THREE.Quaternion();
         box.getWorldQuaternion(boxQuat);
@@ -495,7 +599,7 @@ export class Mediathek3D extends THREE.Object3D {
             normal.set(0, -1, 0);
         }
 
-        // Determine which side of the shelf the camera is currently on
+        // --- Step 2: Determine and preserve camera viewing side ---
         let sideNormal = normal.clone();
         if (currentCamPos) {
             const toCam = currentCamPos.clone().sub(boxCenter);
@@ -505,9 +609,132 @@ export class Mediathek3D extends THREE.Object3D {
             }
         }
 
-        const cameraPos = boxCenter.clone()
-            .add(sideNormal.multiplyScalar(viewDistance))
-            .add(new THREE.Vector3(0, 0, elevation));
+        const selectedMeta = box.userData || {};
+        const selectedShelf = selectedMeta.shelf || key.charAt(0);
+        const selectedIndex = selectedMeta.index || 1;
+        const selectedLevel = selectedMeta.level || 1;
+
+        // --- Step 3: Scan active corridor for obstacles in viewing path ---
+        const perpVector = new THREE.Vector2(-sideNormal.y, sideNormal.x);
+        let minObstacleDist = Infinity;
+        let obstacleMaxTopZ = 0;
+        const corridorObstacles = [];
+        const testObjects = [];
+
+        for (let i = 0; i < this.boxNames.length; i++) {
+            const bName = this.boxNames[i];
+            const otherBox = this.boxes[bName];
+            if (!otherBox || !otherBox.parent || otherBox.visible === false) {
+                continue; // Shelf/box is filtered out or not in scene
+            }
+
+            const otherMeta = otherBox.userData || {};
+            const isSameShelf = otherMeta.shelf === selectedShelf;
+            const isImmediateNeighbor = isSameShelf && Math.abs((otherMeta.index || 1) - selectedIndex) <= 1;
+
+            if (!isSameShelf || !isImmediateNeighbor) {
+                testObjects.push(otherBox);
+            }
+
+            if (isSameShelf && Math.abs((otherMeta.index || 1) - selectedIndex) <= 1 && otherMeta.level === selectedLevel) {
+                continue;
+            }
+
+            const otherPos = new THREE.Vector3();
+            otherBox.getWorldPosition(otherPos);
+
+            const dx = otherPos.x - boxCenter.x;
+            const dy = otherPos.y - boxCenter.y;
+
+            // Project offset onto viewing normal and lateral perpendicular axis
+            const projDist = dx * sideNormal.x + dy * sideNormal.y;
+            const lateralDist = Math.abs(dx * perpVector.x + dy * perpVector.y);
+
+            // Corridor width: approximately 340 units in front of the box
+            if (projDist > 50 && projDist < 2500 && lateralDist < 340) {
+                const otherTopZ = otherPos.z + boxHeight;
+                corridorObstacles.push({
+                    projDist,
+                    lateralDist,
+                    topZ: otherTopZ
+                });
+
+                if (projDist < minObstacleDist) {
+                    minObstacleDist = projDist;
+                }
+            }
+        }
+
+        // --- Step 4: Calculate camera distance and elevation based on corridor clearance ---
+        const prefDist = typeof preferredDistance === 'number' ? preferredDistance : 1150;
+        const baseElev = typeof baseElevation === 'number' ? baseElevation : 320;
+        const minDistance = 550;
+
+        let chosenDist = prefDist;
+        let chosenElevation = baseElev;
+
+        if (minObstacleDist !== Infinity) {
+            // Find highest obstacle top in the immediate corridor
+            for (let i = 0; i < corridorObstacles.length; i++) {
+                const obs = corridorObstacles[i];
+                if (obs.projDist <= minObstacleDist + 200) {
+                    if (obs.topZ > obstacleMaxTopZ) {
+                        obstacleMaxTopZ = obs.topZ;
+                    }
+                }
+            }
+
+            const safeAisleDist = Math.max(minDistance, minObstacleDist - boxDepth / 2 - 80);
+            const tightness = Math.max(0, Math.min(1, (1300 - minObstacleDist) / (1300 - 450)));
+            const tightElevation = baseElev + tightness * 300;
+
+            // Calculate elevation required to look over the opposite shelf via similar triangles
+            const requiredLOSHeight = obstacleMaxTopZ + 35;
+            let overShelfElevation = 0;
+            if (requiredLOSHeight > boxCenter.z && minObstacleDist > 0) {
+                overShelfElevation = (requiredLOSHeight - boxCenter.z) * (prefDist / minObstacleDist) + 40;
+            }
+
+            if (overShelfElevation > 0 && overShelfElevation <= 720) {
+                chosenDist = prefDist;
+                chosenElevation = Math.max(tightElevation, overShelfElevation);
+            } else {
+                chosenDist = Math.min(prefDist, safeAisleDist);
+                chosenElevation = tightElevation;
+            }
+        }
+
+        let cameraPos = boxCenter.clone()
+            .add(sideNormal.clone().multiplyScalar(chosenDist))
+            .add(new THREE.Vector3(0, 0, chosenElevation));
+
+        // --- Step 5: Line-of-sight raycast validation against visible shelf geometry ---
+        if (testObjects.length > 0) {
+            const raycaster = new THREE.Raycaster();
+            let dir = boxCenter.clone().sub(cameraPos).normalize();
+            raycaster.set(cameraPos, dir);
+            let distToTarget = cameraPos.distanceTo(boxCenter);
+            let hits = raycaster.intersectObjects(testObjects, true);
+
+            let isBlocked = hits.some(h => h.distance < distToTarget - 30);
+            let step = 0;
+            while (isBlocked && step < 6) {
+                step++;
+                chosenElevation += 75;
+                if (chosenDist > 600 && minObstacleDist !== Infinity && chosenDist > minObstacleDist - 100) {
+                    chosenDist = Math.max(550, chosenDist - 100);
+                }
+                cameraPos = boxCenter.clone()
+                    .add(sideNormal.clone().multiplyScalar(chosenDist))
+                    .add(new THREE.Vector3(0, 0, chosenElevation));
+
+                dir = boxCenter.clone().sub(cameraPos).normalize();
+                raycaster.set(cameraPos, dir);
+                distToTarget = cameraPos.distanceTo(boxCenter);
+                hits = raycaster.intersectObjects(testObjects, true);
+                isBlocked = hits.some(h => h.distance < distToTarget - 30);
+            }
+        }
 
         return {
             cameraPos,

@@ -354,9 +354,7 @@ export class MediathekApp {
         if (animateCamera && this.mediathek.controls && this.mediathek.camera) {
             const focus = this.mediathek3D.getBoxFocusTransform(
                 cleanId,
-                this.mediathek.camera.position,
-                750,
-                280
+                this.mediathek.camera.position
             );
 
             if (focus) {
