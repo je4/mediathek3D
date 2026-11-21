@@ -97,6 +97,7 @@ export class Mediathek3D extends THREE.Object3D {
             floorSize: this.floorHeight,
             boxWidth: this.boxWidth,
             boxHeight: this.boxHeight,
+            boxDepth: this.boxDepth,
             boxThick: this.boxThick,
             boxDistance: this.boxDistance
         });
@@ -318,10 +319,9 @@ export class Mediathek3D extends THREE.Object3D {
      *    - If filter active and box matches: instantiates standard hollow box (`createBox`).
      *    - If filter active and box does not match on Level 1: instantiates floor plate (`createBottom`) to maintain spatial structure.
      *    - If filter active and level > 1 doesn't match: skipped.
-     * 3. Spline Arc-Length Parametrization & Transformation:
-     *    - Samples spline at `t = (indent + counter * (boxWidth + boxDistance)) / splineLength`.
-     *    - Extracts point on curve and tangent vector.
-     *    - Computes rotation quaternion: aligns local Y to curve tangent and local Z to world up (0, 0, 1).
+     * 3. Joint-Based Polygon Chain Spline Alignment & Transformation:
+     *    - Precomputes non-overlapping secant chord transforms via `SplineCalculator.calculateLevelTransforms`.
+     *    - Enforces collision-free corner clearances (`boxDistance`) along sharp curves.
      * 4. Level Elevation:
      *    - Sets `z = (levelNum - 1) * (boxHeight + boxThick) + (boxHeight / 2)`.
      * 5. Collision-Free Unique Key Registration:
@@ -340,6 +340,8 @@ export class Mediathek3D extends THREE.Object3D {
         const indent = parseFloat(levelData.indent) || 0;
         const totalBoxes = parseInt(levelData.boxes, 10) || 0;
         const levelNum = parseInt(levelKey, 10) || 1;
+
+        const levelTransforms = this.splineCalculator.calculateLevelTransforms(spline, totalBoxes, indent, levelNum);
 
         for (let counter = 0; counter < totalBoxes; counter++) {
             const num1 = counter + 1;
@@ -370,8 +372,8 @@ export class Mediathek3D extends THREE.Object3D {
                 }
             }
 
-            // Calculate transform along spline via SplineCalculator
-            const transform = this.splineCalculator.calculateBoxTransform(spline, counter, indent, levelNum);
+            // Apply calculated transform along spline via SplineCalculator
+            const transform = levelTransforms[counter] || this.splineCalculator.calculateBoxTransform(spline, counter, indent, levelNum);
             if (!transform) continue;
 
             box.position.copy(transform.position);
