@@ -38,6 +38,11 @@
     gap: 16px;
     transition: opacity 0.4s ease;
 
+    &.hidden,
+    &.d-none {
+        display: none !important;
+    }
+
     .spinner {
         width: 48px;
         height: 48px;
@@ -60,6 +65,7 @@
     }
 }
 
-.d-none {
+.d-none,
+.hidden {
     display: none !important;
 }

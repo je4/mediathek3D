@@ -29,16 +29,25 @@ flowchart TB
         Handlers --> EmbedFS
     end
 
-    subgraph ClientLayer["Browser / WebGL Client"]
+    subgraph ClientLayer["Browser / WebGL Client (Modular ES6)"]
         direction TB
         HTML["Go Template Output<br/>(index.gohtml / embed.gohtml)"]
-        AppController["MediathekApp<br/>(HUD, Search, Hash Routing)"]
-        CoreEngine["Mediathek Core<br/>(Scene, Camera, Renderer, OrbitControls)"]
-        MeshGraph["Mediathek3D<br/>(CatmullRom Splines, Boxes, Dynamic Textures)"]
+        AppOrchestrator["MediathekApp<br/>(App Entry & Orchestrator)"]
+        UIController["UIController<br/>(HUD, Search, Drawer, Modals)"]
+        CoreEngine["Mediathek Core<br/>(Scene, Camera, Renderer, Controls)"]
+        MeshGraph["Mediathek3D<br/>(3D Scene Graph Coordinator)"]
+        MathUtils["Math & Coordinate Utils<br/>(modules/math.js)"]
+        BoxBuilder["BoxBuilder<br/>(modules/box-builder.js)"]
+        SplineCalc["SplineCalculator<br/>(modules/spline-calculator.js)"]
 
-        HTML --> AppController
-        AppController --> CoreEngine
-        AppController --> MeshGraph
+        HTML --> AppOrchestrator
+        AppOrchestrator --> UIController
+        AppOrchestrator --> CoreEngine
+        AppOrchestrator --> MeshGraph
+        MeshGraph --> SplineCalc
+        MeshGraph --> BoxBuilder
+        SplineCalc --> MathUtils
+        BoxBuilder --> MathUtils
         CoreEngine --> MeshGraph
     end
 
@@ -99,33 +108,51 @@ Each box front face has a dynamically generated texture rendered on an offscreen
 
 ---
 
-## 3. Frontend ES6 Class Hierarchy
+## 3. Frontend ES6 Class & Module Architecture
 
-### `Mediathek` (`pkg/web/static/js/mediathek-core.js`)
+The frontend is organized into modular, single-responsibility ES6 modules under `pkg/web/static/js/`:
+
+### 3.1 `Math & Utilities` (`pkg/web/static/js/modules/math.js`)
+- `calcX(x, pixelFactor, floorSize)`, `calcY(y, pixelFactor, floorSize)`: Pure 2D floor pixel to centered 3D world coordinate mappings.
+- `nearestPow2(size)`: Calculates nearest power-of-two dimensions for WebGL texture allocations.
+- `clamp(value, min, max)`: Boundary constraint helper.
+
+### 3.2 `BoxBuilder` (`pkg/web/static/js/modules/box-builder.js`)
+- Manages reusable open-box template geometries (`bottom`, `top`, `left`, `right` walls) and bottom plate placeholders.
+- `createLabelTexture(text, aside, textColor)`: Renders 2D offscreen canvas textures with auto-rotated text labels for right-sided aisles.
+- `createBox(fullname, shelfData)`, `createBottom(fullname, shelfData)`: Instantiates individual 3D box meshes with `userData` metadata.
+
+### 3.3 `SplineCalculator` (`pkg/web/static/js/modules/spline-calculator.js`)
+- `createCurveFromPoints(points2D)`: Constructs 3D `THREE.CatmullRomCurve3` splines from 2D shelf floor control points.
+- `calculateBoxTransform(spline, boxIndex, indent, levelNum)`: Computes normalized parameter $u \in [0, 1]$, curve 3D position vector, curve tangent, rotation quaternion, and Z-elevation per shelf level.
+
+### 3.4 `UIController` (`pkg/web/static/js/modules/ui-controller.js`)
+- Caches and manages all HUD and modal DOM elements.
+- Handles search input, keyboard navigation, and autocomplete suggestion dropdowns.
+- Manages box information inspection drawer, floating hover tooltips, camera JSON panel, fullscreen toggle, and help modal.
+
+### 3.5 `Mediathek` (`pkg/web/static/js/mediathek-core.js`)
 - Manages the WebGLRenderer, Scene graph, Ambient/Directional lights, and OrbitControls.
 - **High-DPI Support**: Automatically scales `renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))`.
 - **Camera JSON Serialization**:
   - `getCamJSON()`: Extracts the 16 float elements of `camera.matrixWorld`.
   - `setCamJSON(json)`: Decomposes the 4x4 matrix into position, quaternion rotation, and scale vectors, updating the camera pose and orbit control target.
 - **Smooth View Transitions**:
-  - `focusOn(targetPoint, cameraPos, duration)`: Cubic ease-out interpolation of camera and orbit target.
-  - `resetView()`: Returns to default isometric perspective.
-  - `topView()`: Aligns camera overhead for 2D floor overview.
+  - `animateCameraTo(cameraPos, targetPos, duration)`: Cubic ease-out interpolation of camera and orbit target.
 - **Raycasting**: Normalized device coordinates raycaster for mouse/touch picking.
-- **Screenshot Export**: `captureScreenshot(filename)` exports high-resolution PNG data URLs.
+- **Screenshot Export**: `downloadScreenshot(filename, width, height)` exports high-resolution PNG images.
 
-### `Mediathek3D` (`pkg/web/static/js/mediathek-3d.js`)
+### 3.6 `Mediathek3D` (`pkg/web/static/js/mediathek-3d.js`)
 - Extends `THREE.Object3D`.
 - Asynchronously loads textures and shelf JSON data via Promises / Fetch API.
-- Generates floor planes, satellite textures, spline curves, and all 514 shelf boxes.
-- Provides `boxHighlight(boxId, highlight, customColor)` and `clearHighlight()`.
-- Provides `setBoxFilter(filterList)` to isolate individual shelves or boxes.
+- Coordinates `SplineCalculator` and `BoxBuilder` to generate floor planes, satellite textures, spline curves, and all shelf boxes.
+- Provides `boxHighlight(boxId, highlight, customColor)`, `clearHighlights()`, and `selectBox(boxId)`.
+- Provides `searchBoxes(query)` and `getBoxMetadata(boxId)`.
 
-### `MediathekApp` (`pkg/web/static/js/mediathek-app.js`)
-- Orchestrates UI event listeners, keyboard shortcuts, and URL hash routing.
-- Live search bar with keyboard-accessible autocomplete suggestions.
-- Interactive raycast picking: clicking a box focuses the camera, updates the URL hash (`#A101`), and opens the details drawer.
-- Dispatches `mediathek:ready` and `mediathek:boxselected` custom DOM events.
+### 3.7 `MediathekApp` (`pkg/web/static/js/mediathek-app.js`)
+- Main application orchestrator uniting `Mediathek`, `Mediathek3D`, and `UIController`.
+- Binds viewport mouse pointer events (`pointermove` for hover tooltip, `click` for selection).
+- Manages camera view presets (Isometric Reset, Top-Down View), URL parameter parsing, and CamJSON synchronization.
 
 ---
 

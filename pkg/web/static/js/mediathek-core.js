@@ -5,8 +5,9 @@
  * Supports OrbitControls, TrackballControls, Camera Matrix serialization/deserialization (CamJSON),
  * high-DPI scaling, smooth camera animations, raycasting, and screenshot capture.
  *
+ * @module mediathek-core
  * @author Mediathek Team / modernized for Go Templates
- * @version 2.1.0
+ * @version 2.2.0
  */
 
 import * as THREE from 'three';
@@ -224,6 +225,20 @@ class Mediathek {
     }
 
     /**
+     * Alias to start the animation and rendering loop.
+     */
+    startAnimation() {
+        this.animate();
+    }
+
+    /**
+     * Alias to start the animation and rendering loop.
+     */
+    start() {
+        this.animate();
+    }
+
+    /**
      * Stops the animation loop.
      */
     stop() {
@@ -414,6 +429,17 @@ class Mediathek {
     }
 
     /**
+     * Smoothly animates camera to a position looking at a target point.
+     *
+     * @param {THREE.Vector3} cameraPos Desired camera position.
+     * @param {THREE.Vector3} targetPoint 3D point to look at.
+     * @param {number} [duration=600] Animation duration in milliseconds.
+     */
+    animateCameraTo(cameraPos, targetPoint, duration = 600) {
+        this.focusOn(targetPoint, cameraPos, duration);
+    }
+
+    /**
      * Resets camera to standard isometric view.
      */
     resetView() {
@@ -428,21 +454,34 @@ class Mediathek {
     }
 
     /**
-     * Performs a raycast from normalized mouse coordinates against scene objects.
+     * Performs a raycast from normalized mouse coordinates or Pointer/MouseEvent against scene objects.
      *
-     * @param {number} clientX Pointer clientX position.
-     * @param {number} clientY Pointer clientY position.
-     * @param {Array<THREE.Object3D>} objects Objects to test against.
+     * @param {number|MouseEvent|PointerEvent} clientX Pointer clientX position or mouse/pointer event.
+     * @param {number|Array<THREE.Object3D>} clientY Pointer clientY position or objects array if event is passed.
+     * @param {Array<THREE.Object3D>|boolean} [objects] Objects to test against (or recursive flag if event passed).
      * @param {boolean} [recursive=true] Whether to test descendant objects.
      * @returns {Array<Object>} Raycaster intersection results.
      */
     raycast(clientX, clientY, objects, recursive = true) {
+        let posX = clientX;
+        let posY = clientY;
+        let testObjects = objects;
+        let isRecursive = recursive;
+
+        // If first argument is an Event object (MouseEvent, PointerEvent, etc.)
+        if (clientX && typeof clientX === 'object' && 'clientX' in clientX && 'clientY' in clientX) {
+            posX = clientX.clientX;
+            posY = clientX.clientY;
+            testObjects = clientY;
+            isRecursive = objects !== undefined ? objects : true;
+        }
+
         const rect = this.renderer.domElement.getBoundingClientRect();
-        this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-        this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        this.mouse.x = ((posX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((posY - rect.top) / rect.height) * 2 + 1;
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        return this.raycaster.intersectObjects(objects, recursive);
+        return this.raycaster.intersectObjects(testObjects || [], isRecursive);
     }
 
     /**
@@ -461,6 +500,16 @@ class Mediathek {
         link.click();
         document.body.removeChild(link);
         return dataURL;
+    }
+
+    /**
+     * Downloads a screenshot of the current 3D viewport.
+     *
+     * @param {string} [filename='mediathek3d.png'] Download filename.
+     * @returns {string} Image Data URL.
+     */
+    downloadScreenshot(filename = 'mediathek3d.png') {
+        return this.captureScreenshot(filename);
     }
 
     /**

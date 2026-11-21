@@ -1,40 +1,35 @@
 /**
  * Mediathek3D - 3D Architectural & Shelving Visualization Component.
  *
- * Constructs the 3D floor map, CatmullRom spline curves for all shelving units,
- * dynamic text-labeled open shelving boxes, and provides selection, highlighting,
- * filtering, and progressive rendering methods.
+ * Coordinates floor and satellite map planes, procedural Catmull-Rom spline generation,
+ * open-shelf box instantiations, raycasting selection, box highlighting,
+ * and progressive rendering.
  *
+ * @module mediathek-3d
  * @author Mediathek Team / modernized for Go Templates
- * @version 2.1.0
+ * @version 2.2.0
  */
 
 import * as THREE from 'three';
+import { calcX, calcY } from './modules/math.js';
+import { BoxBuilder } from './modules/box-builder.js';
+import { SplineCalculator } from './modules/spline-calculator.js';
 
-/**
- * Calculates the nearest power of 2 for canvas texture dimensions.
- * @param {number} size
- * @returns {number}
- */
-function nearestPow2(size) {
-    return Math.pow(2, Math.round(Math.log(size) / Math.LN2));
-}
-
-class Mediathek3D extends THREE.Object3D {
+export class Mediathek3D extends THREE.Object3D {
     /**
      * Constructs the Mediathek3D geometry graph and loads floor plan and shelf definitions.
      *
-     * @param {Object} config Configuration settings.
-     * @param {string} config.floorImage URL to floor plan image (e.g. 'static/img/mt_background.png').
-     * @param {string|Object} config.boxData URL to shelf JSON or raw JSON object.
-     * @param {string} [config.satImage] Optional background satellite image URL.
-     * @param {number} [config.pixelFactor=4] Resolution multiplier for mesh and texture sharpness.
-     * @param {number} [config.boxColor=0xe0e0e0] Default box body color.
-     * @param {number} [config.bottomColor=0x283744] Base level / shelf bottom color.
-     * @param {number} [config.boxColorHighlight=0xff0909] Highlight color for selected boxes.
-     * @param {number} [config.boxDelay=1] Milliseconds delay per box during progressive render (0 for instant).
-     * @param {Array<string>|string} [config.drawOnly=null] Optional filter for specific shelves/boxes.
-     * @param {Function} [onReady] Callback invoked with (this) once loading and generation completes.
+     * @param {Object} config - Configuration settings.
+     * @param {string} [config.floorImage='static/img/mt_background.png'] - URL to floor plan image.
+     * @param {string|Object} [config.boxData='api/boxes'] - URL to shelf JSON or raw JSON object.
+     * @param {string} [config.satImage] - Optional background satellite image URL.
+     * @param {number} [config.pixelFactor=4] - Resolution multiplier for mesh and texture sharpness.
+     * @param {number} [config.boxColor=0xe0e0e0] - Default box body color.
+     * @param {number} [config.bottomColor=0x283744] - Base level / shelf bottom color.
+     * @param {number} [config.boxColorHighlight=0xff0909] - Highlight color for selected boxes.
+     * @param {number} [config.boxDelay=0] - Milliseconds delay per box during progressive render (0 for instant).
+     * @param {Array<string>|string} [config.drawOnly=null] - Optional filter for specific shelves/boxes.
+     * @param {Function} [onReady] - Callback invoked with (this) once loading and generation completes.
      */
     constructor(config = {}, onReady = null) {
         super();
@@ -61,10 +56,6 @@ class Mediathek3D extends THREE.Object3D {
         this.drawOnly = config.drawOnly ? (Array.isArray(config.drawOnly) ? config.drawOnly : [config.drawOnly]) : null;
         this.boxDelay = config.boxDelay !== undefined ? config.boxDelay : 0;
 
-        // Spline orientation helpers
-        this.up = new THREE.Vector3(0, 1, 0);
-        this.axis = new THREE.Vector3();
-
         // Data containers
         this.theData = null;
         this.floorTexture = null;
@@ -74,23 +65,26 @@ class Mediathek3D extends THREE.Object3D {
         this.boxNames = [];
         this.boxesHighlight = {};
 
-        // Materials
-        this.materialBox = new THREE.MeshLambertMaterial({
-            color: this.boxColor,
-            wireframe: false
-        });
-        this.materialBottom = new THREE.MeshLambertMaterial({
-            color: this.bottomColor,
-            wireframe: false
-        });
-        this.materialBoxHighlight = new THREE.MeshLambertMaterial({
-            color: this.boxColorHighlight,
-            wireframe: false
+        // Instantiate helper modules
+        this.boxBuilder = new BoxBuilder({
+            pixelFactor: this.pixelFactor,
+            boxWidth: this.boxWidth,
+            boxHeight: this.boxHeight,
+            boxDepth: this.boxDepth,
+            boxThick: this.boxThick,
+            boxColor: this.boxColor,
+            bottomColor: this.bottomColor,
+            boxColorHighlight: this.boxColorHighlight
         });
 
-        // Templates
-        this.boxTemplate = this._createBoxTemplate();
-        this.bottomTemplate = this._createBottomTemplate();
+        this.splineCalculator = new SplineCalculator({
+            pixelFactor: this.pixelFactor,
+            floorSize: this.floorHeight,
+            boxWidth: this.boxWidth,
+            boxHeight: this.boxHeight,
+            boxThick: this.boxThick,
+            boxDistance: this.boxDistance
+        });
 
         // Start loading assets
         this._loadAssets();
@@ -102,7 +96,7 @@ class Mediathek3D extends THREE.Object3D {
      * @returns {number}
      */
     calcX(x) {
-        return x * this.pixelFactor - (this.floorHeight / 2);
+        return calcX(x, this.pixelFactor, this.floorHeight);
     }
 
     /**
@@ -111,7 +105,29 @@ class Mediathek3D extends THREE.Object3D {
      * @returns {number}
      */
     calcY(y) {
-        return y * this.pixelFactor - (this.floorHeight / 2);
+        return calcY(y, this.pixelFactor, this.floorHeight);
+    }
+
+    /**
+     * Creates an individual box mesh with dynamic label (delegates to BoxBuilder).
+     * @param {string} fullname - Box identifier.
+     * @returns {THREE.Object3D}
+     */
+    createBox(fullname) {
+        const shelfKey = fullname.charAt(0);
+        const shelfData = (this.theData && this.theData[shelfKey]) ? this.theData[shelfKey] : {};
+        return this.boxBuilder.createBox(fullname, shelfData);
+    }
+
+    /**
+     * Creates a bottom plate placeholder mesh (delegates to BoxBuilder).
+     * @param {string} fullname - Box identifier.
+     * @returns {THREE.Object3D}
+     */
+    createBottom(fullname) {
+        const shelfKey = fullname.charAt(0);
+        const shelfData = (this.theData && this.theData[shelfKey]) ? this.theData[shelfKey] : {};
+        return this.boxBuilder.createBottom(fullname, shelfData);
     }
 
     /**
@@ -134,7 +150,7 @@ class Mediathek3D extends THREE.Object3D {
                     resolve(texture);
                 },
                 undefined,
-                (err) => reject(new Error(`Failed to load floor image: ${this.floorImage}`))
+                () => reject(new Error(`Failed to load floor image: ${this.floorImage}`))
             );
         });
 
@@ -200,9 +216,8 @@ class Mediathek3D extends THREE.Object3D {
 
         // Create Satellite Plane if available
         if (this.satTexture) {
-            const satWidth = 80 * 2048 / 6 * this.pixelFactor;
-            const satHeight = 80 * 2048 / 6 * this.pixelFactor;
-            const satGeometry = new THREE.PlaneGeometry(satHeight, satHeight);
+            const satDimension = 80 * 2048 / 6 * this.pixelFactor;
+            const satGeometry = new THREE.PlaneGeometry(satDimension, satDimension);
             const satMesh = new THREE.Mesh(satGeometry, this.satTexture);
             satMesh.name = "SatellitePlan";
             satMesh.position.z = -2 * this.floorHeight;
@@ -229,175 +244,6 @@ class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Constructs base open box template geometry (bottom, top, left, right walls).
-     * @private
-     * @returns {THREE.Object3D}
-     */
-    _createBoxTemplate() {
-        const template = new THREE.Object3D();
-        const mat = this.materialBox;
-
-        // Bottom
-        const gBottom = new THREE.BoxGeometry(this.boxDepth, this.boxWidth, this.boxThick);
-        const boxBottom = new THREE.Mesh(gBottom, mat);
-        boxBottom.position.set(0, 0, 0);
-        boxBottom.castShadow = true;
-        boxBottom.name = "bottom";
-        template.add(boxBottom);
-
-        // Top
-        const boxTop = new THREE.Mesh(gBottom, mat);
-        boxTop.position.set(0, 0, this.boxHeight - this.boxThick);
-        boxTop.castShadow = true;
-        boxTop.name = "top";
-        template.add(boxTop);
-
-        // Left wall
-        const gWall = new THREE.BoxGeometry(this.boxDepth, this.boxThick, this.boxHeight - 2 * this.boxThick);
-        const boxLeft = new THREE.Mesh(gWall, mat);
-        boxLeft.position.set(0, -(this.boxWidth - this.boxThick) / 2, (this.boxHeight - this.boxThick) / 2);
-        boxLeft.castShadow = true;
-        boxLeft.name = "left";
-        template.add(boxLeft);
-
-        // Right wall
-        const boxRight = new THREE.Mesh(gWall, mat);
-        boxRight.position.set(0, (this.boxWidth - this.boxThick) / 2, (this.boxHeight - this.boxThick) / 2);
-        boxRight.castShadow = true;
-        boxRight.name = "right";
-        template.add(boxRight);
-
-        return template;
-    }
-
-    /**
-     * Constructs base shelf floor plate template geometry.
-     * @private
-     * @returns {THREE.Object3D}
-     */
-    _createBottomTemplate() {
-        const template = new THREE.Object3D();
-        const g = new THREE.BoxGeometry(this.boxDepth, this.boxWidth, this.boxThick);
-        const boxBottom = new THREE.Mesh(g, this.materialBottom);
-        boxBottom.position.set(0, 0, 0);
-        boxBottom.castShadow = true;
-        boxBottom.name = "bottom";
-        template.add(boxBottom);
-        return template;
-    }
-
-    /**
-     * Creates an individual box mesh with dynamically rendered text texture on its front.
-     *
-     * @param {string} fullname Box identifier (e.g. "A101").
-     * @returns {THREE.Object3D}
-     */
-    createBox(fullname) {
-        const shelfKey = fullname.charAt(0);
-        const shelfData = this.theData[shelfKey] || {};
-        const aside = shelfData.aside || 'right';
-        const area = shelfData.area || '';
-
-        const box = this.boxTemplate.clone();
-        box.name = fullname;
-
-        // Render dynamic label texture
-        const labelTexture = this._createLabelTexture(fullname, aside, "#000000");
-        const labelMaterial = new THREE.MeshBasicMaterial({
-            map: labelTexture,
-            side: THREE.DoubleSide,
-            transparent: true
-        });
-
-        const labelMesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(labelTexture.image.width, labelTexture.image.height),
-            labelMaterial
-        );
-        labelMesh.rotateZ(-Math.PI / 2);
-        labelMesh.position.set(0, 0, this.boxThick + 1);
-        labelMesh.name = "label";
-        box.add(labelMesh);
-
-        // Store metadata on box object for interactive raycasting
-        box.userData = {
-            id: fullname,
-            shelf: shelfKey,
-            level: parseInt(fullname.charAt(1), 10) || 1,
-            index: parseInt(fullname.substring(2), 10) || 1,
-            aside: aside,
-            area: area
-        };
-
-        return box;
-    }
-
-    /**
-     * Creates a bottom plate placeholder mesh for level 1 when filtered.
-     * @param {string} fullname
-     * @returns {THREE.Object3D}
-     */
-    createBottom(fullname) {
-        const shelfKey = fullname.charAt(0);
-        const shelfData = this.theData[shelfKey] || {};
-        const aside = shelfData.aside || 'right';
-
-        const box = this.bottomTemplate.clone();
-        box.name = fullname;
-
-        const labelTexture = this._createLabelTexture(fullname, aside, "#ffffff");
-        const labelMaterial = new THREE.MeshBasicMaterial({
-            map: labelTexture,
-            side: THREE.DoubleSide,
-            transparent: true
-        });
-
-        const labelMesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(labelTexture.image.width, labelTexture.image.height),
-            labelMaterial
-        );
-        labelMesh.rotateZ(-Math.PI / 2);
-        labelMesh.position.set(0, 0, this.boxThick + 1);
-        box.add(labelMesh);
-
-        box.userData = {
-            id: fullname,
-            shelf: shelfKey,
-            level: parseInt(fullname.charAt(1), 10) || 1,
-            index: parseInt(fullname.substring(2), 10) || 1,
-            aside: aside,
-            area: shelfData.area || ''
-        };
-
-        return box;
-    }
-
-    /**
-     * Renders text label to a 2D offscreen canvas and returns a Three.js Texture.
-     * @private
-     */
-    _createLabelTexture(text, aside, textColor = "#000000") {
-        const canvas = document.createElement('canvas');
-        canvas.width = nearestPow2(this.boxWidth - 2 * this.boxThick);
-        canvas.height = nearestPow2(this.boxHeight);
-
-        const ctx = canvas.getContext('2d');
-        ctx.font = `bold ${6 * this.pixelFactor}px "Roboto", Arial, sans-serif`;
-        ctx.fillStyle = textColor;
-
-        if (aside === 'right') {
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(Math.PI);
-            ctx.translate(-canvas.width / 2, -canvas.height / 2);
-        }
-
-        ctx.fillText(`    ${text}`, 5 * this.pixelFactor, canvas.height - 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.colorSpace = THREE.SRGBColorSpace;
-        return texture;
-    }
-
-    /**
      * Generates CatmullRom splines for each shelf path and populates levels.
      * @private
      */
@@ -406,13 +252,10 @@ class Mediathek3D extends THREE.Object3D {
             const shelf = this.theData[shelfKey];
             if (!shelf.point || shelf.point.length === 0) continue;
 
-            const points = [];
-            for (let i = 0; i < shelf.point.length; i++) {
-                const pt = shelf.point[i];
-                points.push(new THREE.Vector3(this.calcX(pt.x), this.calcY(pt.y), 1));
-            }
+            // Generate 3D curve via SplineCalculator
+            const spline = this.splineCalculator.createCurveFromPoints(shelf.point);
+            if (!spline) continue;
 
-            const spline = new THREE.CatmullRomCurve3(points);
             this.curves[shelfKey] = spline;
 
             // Generate levels
@@ -435,9 +278,6 @@ class Mediathek3D extends THREE.Object3D {
         const indent = parseFloat(levelData.indent) || 0;
         const totalBoxes = parseInt(levelData.boxes, 10) || 0;
         const levelNum = parseInt(levelKey, 10) || 1;
-
-        const splineLength = spline.getLength();
-        if (splineLength <= 0) return;
 
         for (let counter = 0; counter < totalBoxes; counter++) {
             const numStr = (counter + 1 < 10 ? '0' : '') + (counter + 1);
@@ -464,22 +304,12 @@ class Mediathek3D extends THREE.Object3D {
                 }
             }
 
-            // Calculate position ratio along the spline
-            const posAlongSpline = ((counter + indent) * (this.boxWidth + this.boxDistance) + (this.boxWidth / 2)) / splineLength;
-            const clampedP = Math.max(0, Math.min(posAlongSpline, 1.0));
+            // Calculate transform along spline via SplineCalculator
+            const transform = this.splineCalculator.calculateBoxTransform(spline, counter, indent, levelNum);
+            if (!transform) continue;
 
-            // Set base position on spline
-            const pointOnSpline = spline.getPointAt(clampedP);
-            box.position.copy(pointOnSpline);
-
-            // Calculate tangent and rotation
-            const tangent = spline.getTangentAt(clampedP).normalize();
-            this.axis.crossVectors(this.up, tangent).normalize();
-            const radians = Math.acos(Math.max(-1, Math.min(1, this.up.dot(tangent))));
-            box.quaternion.setFromAxisAngle(this.axis, radians);
-
-            // Set Z elevation by level
-            box.position.z = (levelNum - 1) * this.boxHeight + this.boxThick;
+            box.position.copy(transform.position);
+            box.quaternion.copy(transform.quaternion);
             box.name = boxname;
 
             this.boxes[boxname] = box;
@@ -522,8 +352,8 @@ class Mediathek3D extends THREE.Object3D {
         }
 
         const material = highlight
-            ? (customColor ? new THREE.MeshLambertMaterial({ color: customColor }) : this.materialBoxHighlight)
-            : this.materialBox;
+            ? (customColor ? new THREE.MeshLambertMaterial({ color: customColor }) : this.boxBuilder.materialBoxHighlight)
+            : this.boxBuilder.materialBox;
 
         box.traverse((child) => {
             if (['top', 'bottom', 'left', 'right'].includes(child.name)) {
@@ -532,16 +362,16 @@ class Mediathek3D extends THREE.Object3D {
         });
 
         if (highlight) {
-            this.boxesHighlight[key] = true;
+            this.boxesHighlight[key] = box;
         } else {
             delete this.boxesHighlight[key];
         }
     }
 
     /**
-     * Clears all highlighted boxes back to standard material.
+     * Removes highlight styling from all currently highlighted boxes.
      */
-    clearHighlight() {
+    clearHighlights() {
         for (const key in this.boxesHighlight) {
             this.boxHighlight(key, false);
         }
@@ -549,55 +379,68 @@ class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Retrieves the 3D box Mesh/Group object by ID.
-     * @param {string} boxname
-     * @returns {THREE.Object3D|null}
-     */
-    getBox(boxname) {
-        if (!boxname) return null;
-        return this.boxes[boxname.toUpperCase()] || null;
-    }
-
-    /**
-     * Returns an array of all registered box identifiers.
-     * @returns {Array<string>}
-     */
-    getAllBoxNames() {
-        return [...this.boxNames];
-    }
-
-    /**
-     * Dynamically filters visible boxes or shelves.
+     * Selects and focuses on a box, clearing previous highlights and returning its world position.
      *
-     * @param {Array<string>|string|null} filterList List of shelves ('A', 'B') or boxes ('A101').
+     * @param {string} boxname Box ID (e.g. "A101").
+     * @param {number} [color=null] Optional highlight color.
+     * @returns {THREE.Vector3|null} The world position of the box or null if not found.
      */
-    setBoxFilter(filterList) {
-        this.drawOnly = filterList ? (Array.isArray(filterList) ? filterList : [filterList]) : null;
+    selectBox(boxname, color = null) {
+        if (!boxname) return null;
+        const key = boxname.toUpperCase();
+        const box = this.boxes[key];
+        if (!box) return null;
 
-        for (const boxName in this.boxes) {
-            const box = this.boxes[boxName];
-            const shelfKey = boxName.charAt(0);
+        this.clearHighlights();
+        this.boxHighlight(key, true, color);
 
-            if (this.drawOnly === null) {
-                box.visible = true;
-            } else {
-                let match = false;
-                for (let i = 0; i < this.drawOnly.length; i++) {
-                    const f = this.drawOnly[i];
-                    if (f === boxName || f === shelfKey || boxName.startsWith(f)) {
-                        match = true;
-                        break;
-                    }
-                }
-                box.visible = match;
+        const worldPos = new THREE.Vector3();
+        box.getWorldPosition(worldPos);
+        return worldPos;
+    }
+
+    /**
+     * Searches available boxes by prefix or full identifier.
+     *
+     * @param {string} query Search substring (case-insensitive).
+     * @returns {Array<Object>} List of matching box metadata objects.
+     */
+    searchBoxes(query) {
+        if (!query) return [];
+        const q = query.trim().toUpperCase();
+        const results = [];
+
+        for (let i = 0; i < this.boxNames.length; i++) {
+            const name = this.boxNames[i];
+            if (name.includes(q)) {
+                const box = this.boxes[name];
+                results.push({
+                    id: name,
+                    shelf: box.userData.shelf,
+                    level: box.userData.level,
+                    index: box.userData.index,
+                    area: box.userData.area
+                });
             }
         }
+
+        return results;
+    }
+
+    /**
+     * Retrieves metadata associated with a box.
+     *
+     * @param {string} boxname
+     * @returns {Object|null}
+     */
+    getBoxMetadata(boxname) {
+        if (!boxname) return null;
+        const box = this.boxes[boxname.toUpperCase()];
+        return box ? box.userData : null;
     }
 }
 
 // Export for ES Module and global browser context
-export { Mediathek3D };
-
 if (typeof window !== 'undefined') {
     window.Mediathek3D = Mediathek3D;
 }

@@ -179,9 +179,14 @@ mediathek3D/
 │       │       │   └── addons/controls/
 │       │       │       ├── OrbitControls.js
 │       │       │       └── TrackballControls.js
+│       │       ├── modules/
+│       │       │   ├── math.js             # 2D/3D coordinate conversions & math utilities
+│       │       │   ├── box-builder.js      # Shelf box geometry & dynamic canvas label builder
+│       │       │   ├── spline-calculator.js# Catmull-Rom spline curves & box distribution math
+│       │       │   └── ui-controller.js    # HUD DOM controls, search, drawer & modals
 │       │       ├── mediathek-core.js   # Mediathek Three.js scene engine (ES6)
-│       │       ├── mediathek-3d.js     # Mediathek3D shelf & spline generator (ES6)
-│       │       └── mediathek-app.js    # UI controller, raycasting, search, HUD (ES6)
+│       │       ├── mediathek-3d.js     # Mediathek3D shelf visualization coordinator (ES6)
+│       │       └── mediathek-app.js    # Main application orchestrator & raycasting (ES6)
 │       └── template/             # Go HTML templates
 │           ├── index.gohtml      # Full-page interactive 3D viewer
 │           ├── embed.gohtml      # Embeddable iframe viewer

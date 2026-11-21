@@ -447,6 +447,9 @@ html, body {
   gap: 16px;
   transition: opacity 0.4s ease;
 }
+#loading-overlay.hidden, #loading-overlay.d-none {
+  display: none !important;
+}
 #loading-overlay .spinner {
   width: 48px;
   height: 48px;
@@ -466,7 +469,8 @@ html, body {
     transform: rotate(360deg);
   }
 }
-.d-none {
+.d-none,
+.hidden {
   display: none !important;
 }
 
