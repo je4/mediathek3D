@@ -24,7 +24,7 @@ export class SplineCalculator {
      * @param {number} [options.boxHeight=80] - Box height.
      * @param {number} [options.boxDepth=120] - Box depth.
      * @param {number} [options.boxThick=8] - Box wall thickness.
-     * @param {number} [options.boxDistance=8] - Minimum spacing between adjacent boxes.
+     * @param {number} [options.boxDistance=0] - Minimum spacing between adjacent boxes.
      */
     constructor(options = {}) {
         this.pixelFactor = options.pixelFactor || 4;
@@ -33,7 +33,7 @@ export class SplineCalculator {
         this.boxHeight = options.boxHeight || (20 * this.pixelFactor);
         this.boxDepth = options.boxDepth || (30 * this.pixelFactor);
         this.boxThick = options.boxThick || (2 * this.pixelFactor);
-        this.boxDistance = options.boxDistance || (2 * this.pixelFactor);
+        this.boxDistance = options.boxDistance !== undefined ? options.boxDistance : 0;
 
         // Spline orientation reference vectors
         this.upVector = new THREE.Vector3(0, 1, 0);

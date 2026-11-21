@@ -59,7 +59,7 @@ export class Mediathek3D extends THREE.Object3D {
         this.boxHeight = 20 * this.pixelFactor;
         this.boxDepth = 30 * this.pixelFactor;
         this.boxThick = 2 * this.pixelFactor;
-        this.boxDistance = 2 * this.pixelFactor;
+        this.boxDistance = config.boxDistance !== undefined ? config.boxDistance * this.pixelFactor : 0;
 
         this.boxColor = config.boxColor !== undefined ? config.boxColor : 0xf4f5f7;
         this.bottomColor = config.bottomColor !== undefined ? config.bottomColor : 0x283744;
