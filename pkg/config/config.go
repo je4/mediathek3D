@@ -25,7 +25,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		Host:        "0.0.0.0",
 		Port:        8080,
-		BaseURL:     "",
+		BaseURL:     "./",
 		Title:       "HGK Mediathek 3D",
 		DataPath:    "",
 		StaticDir:   "",

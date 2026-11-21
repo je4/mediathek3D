@@ -175,7 +175,7 @@ mediathek3D/
 │       │   └── js/
 │       │       ├── three/
 │       │       │   ├── three.module.js
-│       │       │   ├── three.module.min.js
+│       │       │   ├── three.core.js
 │       │       │   └── addons/controls/
 │       │       │       ├── OrbitControls.js
 │       │       │       └── TrackballControls.js

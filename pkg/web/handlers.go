@@ -54,8 +54,18 @@ func (h *Handlers) loadTemplates() error {
 			b, _ := json.Marshal(v)
 			return string(b)
 		},
-		"upper": strings.ToUpper,
-		"lower": strings.ToLower,
+		"upper":   strings.ToUpper,
+		"lower":   strings.ToLower,
+		"safeJS":  func(s string) template.JS { return template.JS(s) },
+		"safeURL": func(s string) template.URL { return template.URL(s) },
+		"assetURL": func(base, path string) template.HTML {
+			if base == "" {
+				base = "./"
+			} else if !strings.HasSuffix(base, "/") {
+				base += "/"
+			}
+			return template.HTML(`"` + base + path + `"`)
+		},
 	}
 
 	if h.cfg.TemplateDir != "" {
@@ -110,7 +120,9 @@ func (h *Handlers) renderTemplate(w http.ResponseWriter, r *http.Request, templa
 	camJSON := strings.TrimSpace(q.Get("cam"))
 
 	baseURL := h.cfg.BaseURL
-	if baseURL != "" && !strings.HasSuffix(baseURL, "/") {
+	if baseURL == "" {
+		baseURL = "./"
+	} else if !strings.HasSuffix(baseURL, "/") {
 		baseURL += "/"
 	}
 

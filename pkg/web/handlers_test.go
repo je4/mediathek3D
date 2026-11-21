@@ -79,6 +79,18 @@ func TestIndexPage(t *testing.T) {
 	if !strings.Contains(bodyStr, "renderer-container") {
 		t.Errorf("Expected renderer-container DOM element in HTML")
 	}
+	if !strings.Contains(bodyStr, `"three": "./static/js/three/three.module.js"`) {
+		t.Errorf("Expected relative importmap for 'three', got HTML:\n%s", bodyStr)
+	}
+	if !strings.Contains(bodyStr, `"three/addons/": "./static/js/three/addons/"`) {
+		t.Errorf("Expected relative importmap for 'three/addons/'")
+	}
+	if !strings.Contains(bodyStr, `"mediathek-app": "./static/js/mediathek-app.js"`) {
+		t.Errorf("Expected relative importmap for 'mediathek-app'")
+	}
+	if !strings.Contains(bodyStr, `import { MediathekApp } from 'mediathek-app';`) {
+		t.Errorf("Expected module import from 'mediathek-app', got HTML:\n%s", bodyStr)
+	}
 }
 
 func TestEmbedPage(t *testing.T) {
@@ -232,6 +244,7 @@ func TestStaticFiles(t *testing.T) {
 		"/static/js/mediathek-3d.js",
 		"/static/js/mediathek-app.js",
 		"/static/js/three/three.module.js",
+		"/static/js/three/three.core.js",
 		"/static/js/three/addons/controls/OrbitControls.js",
 		"/static/js/three/addons/controls/TrackballControls.js",
 		"/static/img/mt_background.png",

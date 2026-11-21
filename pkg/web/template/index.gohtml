@@ -21,14 +21,15 @@
     {
         "imports": {
             "three": "{{.BaseURL}}static/js/three/three.module.js",
-            "three/addons/": "{{.BaseURL}}static/js/three/addons/"
+            "three/addons/": "{{.BaseURL}}static/js/three/addons/",
+            "mediathek-app": "{{.BaseURL}}static/js/mediathek-app.js"
         }
     }
     </script>
 
     <!-- Mediathek 3D Application Entry Point -->
     <script type="module">
-        import { MediathekApp } from '{{.BaseURL}}static/js/mediathek-app.js';
+        import { MediathekApp } from 'mediathek-app';
 
         document.addEventListener('DOMContentLoaded', function () {
             window.mediathekApp = new MediathekApp({
