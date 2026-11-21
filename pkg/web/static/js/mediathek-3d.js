@@ -176,6 +176,8 @@ export class Mediathek3D extends THREE.Object3D {
                         map: texture,
                         roughness: 0.7,
                         metalness: 0.02,
+                        transparent: true,
+                        alphaTest: 0.01,
                         side: THREE.FrontSide
                     });
                     resolve(texture);
@@ -195,6 +197,7 @@ export class Mediathek3D extends THREE.Object3D {
                         texture.colorSpace = THREE.SRGBColorSpace;
                         this.satTexture = new THREE.MeshBasicMaterial({
                             map: texture,
+                            transparent: true,
                             side: THREE.FrontSide
                         });
                         resolve(texture);
