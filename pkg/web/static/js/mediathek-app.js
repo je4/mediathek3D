@@ -195,7 +195,8 @@ export class MediathekApp {
 
         // Select initial box if configured
         if (this.options.initialBox) {
-            this.selectBox(this.options.initialBox, false);
+            const updateCamera = !this.options.camJSON;
+            this.selectBox(this.options.initialBox, false, updateCamera);
         }
 
         this._syncCamJSON();
@@ -253,6 +254,15 @@ export class MediathekApp {
         window.addEventListener('pointercancel', () => {
             this._pointerDownPos = null;
             this._isPointerDragging = false;
+        });
+
+        // Listen for history popstate (e.g. back/forward navigation with ?box=...)
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const boxParam = urlParams.get('box') || (window.location.hash ? window.location.hash.replace(/^#/, '') : '');
+            if (boxParam && boxParam.toUpperCase() !== this.selectedBoxId) {
+                this.selectBox(boxParam, true);
+            }
         });
     }
 
@@ -324,12 +334,13 @@ export class MediathekApp {
     }
 
     /**
-     * Selects and highlights a box, flies the camera toward it, and opens the info drawer.
+     * Selects and highlights a box, flies or positions the camera toward it, and opens the info drawer.
      *
      * @param {string} boxId - Box identifier (e.g. "A101").
-     * @param {boolean} [animateCamera=true] - Smoothly pan camera to box.
+     * @param {boolean} [animateCamera=true] - Smoothly pan camera to box (if false, positions camera immediately).
+     * @param {boolean} [updateCamera=true] - Whether to position the camera toward the selected box.
      */
-    selectBox(boxId, animateCamera = true) {
+    selectBox(boxId, animateCamera = true, updateCamera = true) {
         if (!boxId || !this.mediathek3D) return;
 
         const cleanId = boxId.trim().toUpperCase();
@@ -353,25 +364,27 @@ export class MediathekApp {
         const metadata = this.mediathek3D.getBoxMetadata(cleanId) || { id: cleanId };
         this.ui.showInfoDrawer(metadata);
 
-        // Smooth camera transition toward selected box from current viewing side
-        if (animateCamera && this.mediathek.controls && this.mediathek.camera) {
+        // Smooth camera transition or instant positioning toward selected box from current viewing side
+        if (updateCamera && this.mediathek && this.mediathek.controls && this.mediathek.camera) {
             const focus = this.mediathek3D.getBoxFocusTransform(
                 cleanId,
                 this.mediathek.camera.position
             );
 
-            if (focus) {
+            const camPos = focus ? focus.cameraPos : new THREE.Vector3(worldPos.x, worldPos.y - 800, worldPos.z + 600);
+            const targetPos = focus ? focus.targetPos : worldPos;
+
+            if (animateCamera) {
                 this.mediathek.animateCameraTo(
-                    focus.cameraPos,
-                    focus.targetPos,
+                    camPos,
+                    targetPos,
                     800
                 );
             } else {
-                this.mediathek.animateCameraTo(
-                    new THREE.Vector3(worldPos.x, worldPos.y - 800, worldPos.z + 600),
-                    worldPos,
-                    800
-                );
+                this.mediathek.camera.position.copy(camPos);
+                this.mediathek.controls.target.copy(targetPos);
+                this.mediathek.camera.lookAt(targetPos);
+                this.mediathek.controls.update();
             }
         }
 
