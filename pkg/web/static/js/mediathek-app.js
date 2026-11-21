@@ -36,7 +36,6 @@ export class MediathekApp {
             initialBox: '',
             initialShelf: '',
             camJSON: null,
-            showBooks: true,
             isEmbed: false
         }, options);
 
@@ -74,11 +73,6 @@ export class MediathekApp {
             this.options.camJSON = urlParams.get('cam');
         }
 
-        if (urlParams.has('books')) {
-            const b = urlParams.get('books').toLowerCase();
-            this.options.showBooks = !(b === '0' || b === 'false' || b === 'no' || b === 'off');
-        }
-
         if (urlParams.has('mode') && urlParams.get('mode') === 'embed') {
             this.options.isEmbed = true;
         }
@@ -97,8 +91,7 @@ export class MediathekApp {
             onApplyCamJSON: (camJsonStr) => this._onApplyCamJSON(camJsonStr),
             onResetView: () => this.resetCameraView(),
             onTopView: () => this.setTopCameraView(),
-            onScreenshot: () => this.downloadScreenshot(),
-            onToggleBooks: () => this.toggleBooks()
+            onScreenshot: () => this.downloadScreenshot()
         });
     }
 
@@ -129,7 +122,6 @@ export class MediathekApp {
             boxColor: 0xf4f5f7,
             bottomColor: 0x283744,
             boxColorHighlight: 0xff2222,
-            showBooks: this.options.showBooks !== undefined ? this.options.showBooks : true,
             drawOnly: this.options.initialShelf ? this.options.initialShelf : null,
             boxDelay: 0
         };
@@ -171,9 +163,11 @@ export class MediathekApp {
             const meta = m3d.getBoxMetadata(name) || {};
             return {
                 id: name,
+                id2: meta.id2 || name,
                 shelf: meta.shelf || name.charAt(0),
                 level: meta.level || parseInt(name.charAt(1), 10) || 1,
                 index: meta.index || parseInt(name.substring(2), 10) || 1,
+                index2: meta.index2 || (meta.id2 ? parseInt(meta.id2.substring(2), 10) : 1),
                 area: meta.area || ''
             };
         });
@@ -205,19 +199,58 @@ export class MediathekApp {
     }
 
     /**
-     * Binds mouse move and click events on renderer canvas for raycasting.
+     * Binds mouse move, pointer down, and pointer up events on renderer canvas for raycasting.
+     * Prevents unintentional box selection during camera navigation (orbit/pan) by tracking
+     * drag distance and duration.
      * @private
      */
     _bindRaycastingEvents() {
         const dom = this.mediathek.renderer.domElement;
 
-        dom.addEventListener('pointermove', (e) => {
-            this._onPointerMove(e);
+        this._pointerDownPos = null;
+        this._pointerDownTime = 0;
+        this._isPointerDragging = false;
+
+        dom.addEventListener('pointerdown', (e) => {
+            if (e.button === 0) {
+                this._pointerDownPos = { x: e.clientX, y: e.clientY };
+                this._pointerDownTime = performance.now();
+                this._isPointerDragging = false;
+            }
         }, false);
 
-        dom.addEventListener('click', (e) => {
-            this._onPointerClick(e);
+        dom.addEventListener('pointermove', (e) => {
+            if (this._pointerDownPos) {
+                const dist = Math.hypot(e.clientX - this._pointerDownPos.x, e.clientY - this._pointerDownPos.y);
+                if (dist > 5) {
+                    this._isPointerDragging = true;
+                    this.ui.hideTooltip();
+                }
+            }
+            if (!this._isPointerDragging) {
+                this._onPointerMove(e);
+            }
         }, false);
+
+        dom.addEventListener('pointerup', (e) => {
+            if (e.button === 0 && this._pointerDownPos) {
+                const dist = Math.hypot(e.clientX - this._pointerDownPos.x, e.clientY - this._pointerDownPos.y);
+                const duration = performance.now() - this._pointerDownTime;
+                const isClick = !this._isPointerDragging && dist < 5 && duration < 600;
+
+                this._pointerDownPos = null;
+                this._isPointerDragging = false;
+
+                if (isClick) {
+                    this._onPointerClick(e);
+                }
+            }
+        }, false);
+
+        window.addEventListener('pointercancel', () => {
+            this._pointerDownPos = null;
+            this._isPointerDragging = false;
+        });
     }
 
     /**
@@ -232,15 +265,12 @@ export class MediathekApp {
 
         if (hitBox) {
             const boxId = hitBox.name || (hitBox.userData && hitBox.userData.id);
-            if (boxId && boxId !== this.hoveredBoxId && boxId !== this.selectedBoxId) {
+            if (boxId) {
                 this.hoveredBoxId = boxId;
                 const meta = this.mediathek3D.getBoxMetadata(boxId);
                 const areaInfo = meta && meta.area ? ` (${meta.area})` : '';
-                this.ui.showTooltip(event.clientX, event.clientY, `Kiste ${boxId}${areaInfo}`);
-            } else if (boxId) {
-                const meta = this.mediathek3D.getBoxMetadata(boxId);
-                const areaInfo = meta && meta.area ? ` (${meta.area})` : '';
-                this.ui.showTooltip(event.clientX, event.clientY, `Kiste ${boxId}${areaInfo}`);
+                const idLabel = (meta && meta.id2 && meta.id2 !== boxId) ? `${boxId} / ${meta.id2}` : boxId;
+                this.ui.showTooltip(event.clientX, event.clientY, `Kiste ${idLabel}${areaInfo}`);
             }
         } else {
             if (this.hoveredBoxId && this.hoveredBoxId !== this.selectedBoxId) {
@@ -251,7 +281,7 @@ export class MediathekApp {
     }
 
     /**
-     * Handles pointer click for box selection and inspector drawer opening.
+     * Handles pointer click (clean click without dragging) for box selection and inspector drawer opening.
      * @private
      */
     _onPointerClick(event) {
@@ -343,7 +373,11 @@ export class MediathekApp {
         }
 
         const q = query.trim().toUpperCase();
-        const matches = this.boxesCache.filter(b => b.id.includes(q) || (b.area && b.area.toUpperCase().includes(q))).slice(0, 8);
+        const matches = this.boxesCache.filter(b => 
+            b.id.toUpperCase().includes(q) || 
+            (b.id2 && b.id2.toUpperCase().includes(q)) || 
+            (b.area && b.area.toUpperCase().includes(q))
+        ).slice(0, 8);
         this.ui.renderSearchResults(matches);
     }
 
@@ -395,20 +429,6 @@ export class MediathekApp {
             new THREE.Vector3(0, 0, 0),
             800
         );
-    }
-
-    /**
-     * Toggles procedural book fillings visibility on and off.
-     * @param {boolean} [visible]
-     * @returns {boolean}
-     */
-    toggleBooks(visible) {
-        if (!this.mediathek3D) return false;
-        const state = (visible !== undefined) ? this.mediathek3D.setBooksVisible(visible) : this.mediathek3D.toggleBooks();
-        if (this.ui) {
-            this.ui.updateBooksToggleState(state);
-        }
-        return state;
     }
 
     /**

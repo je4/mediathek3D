@@ -54,7 +54,6 @@ export class UIController {
             btnResetView: document.getElementById('btn-reset-view'),
             btnTopView: document.getElementById('btn-top-view'),
             btnScreenshot: document.getElementById('btn-screenshot'),
-            btnToggleBooks: document.getElementById('btn-toggle-books'),
             btnFullscreen: document.getElementById('btn-fullscreen'),
             btnHelp: document.getElementById('btn-help'),
             helpModal: document.getElementById('help-modal'),
@@ -155,14 +154,6 @@ export class UIController {
             });
         }
 
-        if (this.dom.btnToggleBooks) {
-            this.dom.btnToggleBooks.addEventListener('click', () => {
-                if (typeof this.options.onToggleBooks === 'function') {
-                    this.options.onToggleBooks();
-                }
-            });
-        }
-
         if (this.dom.btnFullscreen) {
             this.dom.btnFullscreen.addEventListener('click', () => {
                 this.toggleFullscreen();
@@ -196,10 +187,6 @@ export class UIController {
             if (e.key === 'Escape') {
                 this.showHelpModal(false);
                 this.closeInfoDrawer();
-            } else if (e.key === 'b' || e.key === 'B') {
-                if (typeof this.options.onToggleBooks === 'function') {
-                    this.options.onToggleBooks();
-                }
             } else if (e.key === 'r' || e.key === 'R') {
                 if (typeof this.options.onResetView === 'function') {
                     this.options.onResetView();
@@ -243,12 +230,15 @@ export class UIController {
             return;
         }
 
-        const itemsHTML = results.map(box => `
+        const itemsHTML = results.map(box => {
+            const idLabel = (box.id2 && box.id2 !== box.id) ? `${box.id} / ${box.id2}` : box.id;
+            return `
             <div class="search-result-item" data-box-id="${box.id}">
-                <span class="box-id">${box.id}</span>
+                <span class="box-id">${idLabel}</span>
                 <span class="box-area">${box.area || `Regal ${box.shelf}`}</span>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         this.dom.searchResults.innerHTML = itemsHTML;
         this.dom.searchResults.classList.remove('d-none', 'hidden');
@@ -283,10 +273,13 @@ export class UIController {
     showInfoDrawer(boxData) {
         if (!this.dom.infoDrawer) return;
 
-        if (this.dom.infoTitle) this.dom.infoTitle.textContent = `Kiste ${boxData.id}`;
+        const idLabel = (boxData.id2 && boxData.id2 !== boxData.id) ? `${boxData.id} / ${boxData.id2}` : boxData.id;
+        const indexLabel = (boxData.index2 && boxData.index2 !== boxData.index) ? `${boxData.index} / ${boxData.index2}` : (boxData.index || '-');
+
+        if (this.dom.infoTitle) this.dom.infoTitle.textContent = `Kiste ${idLabel}`;
         if (this.dom.infoShelf) this.dom.infoShelf.textContent = boxData.shelf || '-';
         if (this.dom.infoLevel) this.dom.infoLevel.textContent = boxData.level || '-';
-        if (this.dom.infoIndex) this.dom.infoIndex.textContent = boxData.index || '-';
+        if (this.dom.infoIndex) this.dom.infoIndex.textContent = indexLabel;
         if (this.dom.infoArea) this.dom.infoArea.textContent = boxData.area || 'Allgemein';
 
         if (this.dom.infoLink) {
@@ -391,20 +384,6 @@ export class UIController {
             .catch(err => {
                 console.warn('Clipboard copy failed:', err);
             });
-    }
-
-    /**
-     * Updates visual state of book toggle button.
-     * @param {boolean} active
-     */
-    updateBooksToggleState(active) {
-        if (this.dom.btnToggleBooks) {
-            if (active) {
-                this.dom.btnToggleBooks.classList.add('active');
-            } else {
-                this.dom.btnToggleBooks.classList.remove('active');
-            }
-        }
     }
 
     /**

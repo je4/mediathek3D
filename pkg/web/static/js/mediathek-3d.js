@@ -49,7 +49,6 @@ export class Mediathek3D extends THREE.Object3D {
         this.boxColor = config.boxColor !== undefined ? config.boxColor : 0xf4f5f7;
         this.bottomColor = config.bottomColor !== undefined ? config.bottomColor : 0x283744;
         this.boxColorHighlight = config.boxColorHighlight !== undefined ? config.boxColorHighlight : 0xff2222;
-        this.showBooks = config.showBooks !== undefined ? config.showBooks : true;
 
         this.floorImage = config.floorImage || 'static/img/mt_background.png';
         this.satImage = config.satImage || null;
@@ -75,8 +74,7 @@ export class Mediathek3D extends THREE.Object3D {
             boxThick: this.boxThick,
             boxColor: this.boxColor,
             bottomColor: this.bottomColor,
-            boxColorHighlight: this.boxColorHighlight,
-            showBooks: this.showBooks
+            boxColorHighlight: this.boxColorHighlight
         });
 
         this.splineCalculator = new SplineCalculator({
@@ -112,24 +110,26 @@ export class Mediathek3D extends THREE.Object3D {
 
     /**
      * Creates an individual box mesh with dynamic label (delegates to BoxBuilder).
-     * @param {string} fullname - Box identifier.
+     * @param {string} fullname - Primary box identifier (e.g. "A101").
+     * @param {string} [fullname2=''] - Opposite side box identifier (e.g. "A107").
      * @returns {THREE.Object3D}
      */
-    createBox(fullname) {
+    createBox(fullname, fullname2 = '') {
         const shelfKey = fullname.charAt(0);
         const shelfData = (this.theData && this.theData[shelfKey]) ? this.theData[shelfKey] : {};
-        return this.boxBuilder.createBox(fullname, shelfData);
+        return this.boxBuilder.createBox(fullname, shelfData, fullname2);
     }
 
     /**
      * Creates a bottom plate placeholder mesh (delegates to BoxBuilder).
-     * @param {string} fullname - Box identifier.
+     * @param {string} fullname - Primary box identifier (e.g. "A101").
+     * @param {string} [fullname2=''] - Opposite side box identifier (e.g. "A107").
      * @returns {THREE.Object3D}
      */
-    createBottom(fullname) {
+    createBottom(fullname, fullname2 = '') {
         const shelfKey = fullname.charAt(0);
         const shelfData = (this.theData && this.theData[shelfKey]) ? this.theData[shelfKey] : {};
-        return this.boxBuilder.createBottom(fullname, shelfData);
+        return this.boxBuilder.createBottom(fullname, shelfData, fullname2);
     }
 
     /**
@@ -284,25 +284,29 @@ export class Mediathek3D extends THREE.Object3D {
         const levelNum = parseInt(levelKey, 10) || 1;
 
         for (let counter = 0; counter < totalBoxes; counter++) {
-            const numStr = (counter + 1 < 10 ? '0' : '') + (counter + 1);
-            const boxname = `${shelfKey}${levelKey}${numStr}`;
+            const num1 = counter + 1;
+            const num2 = totalBoxes - counter;
+            const numStr1 = (num1 < 10 ? '0' : '') + num1;
+            const numStr2 = (num2 < 10 ? '0' : '') + num2;
+            const boxname1 = `${shelfKey}${levelKey}${numStr1}`;
+            const boxname2 = `${shelfKey}${levelKey}${numStr2}`;
 
             let box = null;
             if (this.drawOnly === null) {
-                box = this.createBox(boxname);
+                box = this.createBox(boxname1, boxname2);
             } else {
                 let match = false;
                 for (let i = 0; i < this.drawOnly.length; i++) {
                     const filter = this.drawOnly[i];
-                    if (filter === boxname || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                    if (filter === boxname1 || filter === boxname2 || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
                         match = true;
                         break;
                     }
                 }
                 if (match) {
-                    box = this.createBox(boxname);
+                    box = this.createBox(boxname1, boxname2);
                 } else if (levelNum === 1) {
-                    box = this.createBottom(boxname);
+                    box = this.createBottom(boxname1, boxname2);
                 } else {
                     continue;
                 }
@@ -314,10 +318,13 @@ export class Mediathek3D extends THREE.Object3D {
 
             box.position.copy(transform.position);
             box.quaternion.copy(transform.quaternion);
-            box.name = boxname;
+            box.name = boxname1;
 
-            this.boxes[boxname] = box;
-            this.boxNames.push(boxname);
+            this.boxes[boxname1] = box;
+            if (boxname2 !== boxname1) {
+                this.boxes[boxname2] = box;
+            }
+            this.boxNames.push(boxname1);
         }
     }
 
@@ -367,33 +374,15 @@ export class Mediathek3D extends THREE.Object3D {
 
         if (highlight) {
             this.boxesHighlight[key] = box;
+            if (box.userData && box.userData.id2 && box.userData.id2 !== key) {
+                this.boxesHighlight[box.userData.id2] = box;
+            }
         } else {
             delete this.boxesHighlight[key];
-        }
-    }
-
-    /**
-     * Toggles visibility of all procedural book fillings.
-     * @param {boolean} [visible] - Target visibility (optional).
-     * @returns {boolean} New visibility state.
-     */
-    setBooksVisible(visible) {
-        this.showBooks = (visible !== undefined) ? !!visible : !this.showBooks;
-        this.boxBuilder.showBooks = this.showBooks;
-        this.traverse((child) => {
-            if (child.name === "books_cluster") {
-                child.visible = this.showBooks;
+            if (box.userData && box.userData.id2) {
+                delete this.boxesHighlight[box.userData.id2];
             }
-        });
-        return this.showBooks;
-    }
-
-    /**
-     * Toggles book fillings between visible and hidden.
-     * @returns {boolean} New visibility state.
-     */
-    toggleBooks() {
-        return this.setBooksVisible(!this.showBooks);
+        }
     }
 
     /**
@@ -409,7 +398,7 @@ export class Mediathek3D extends THREE.Object3D {
     /**
      * Selects and focuses on a box, clearing previous highlights and returning its world position.
      *
-     * @param {string} boxname Box ID (e.g. "A101").
+     * @param {string} boxname Box ID (e.g. "A101" or "A107").
      * @param {number} [color=null] Optional highlight color.
      * @returns {THREE.Vector3|null} The world position of the box or null if not found.
      */
@@ -428,7 +417,7 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
-     * Searches available boxes by prefix or full identifier.
+     * Searches available boxes by prefix or full identifier (matching both side IDs).
      *
      * @param {string} query Search substring (case-insensitive).
      * @returns {Array<Object>} List of matching box metadata objects.
@@ -440,13 +429,21 @@ export class Mediathek3D extends THREE.Object3D {
 
         for (let i = 0; i < this.boxNames.length; i++) {
             const name = this.boxNames[i];
-            if (name.includes(q)) {
-                const box = this.boxes[name];
+            const box = this.boxes[name];
+            if (!box || !box.userData) continue;
+
+            const id1 = box.userData.id || name;
+            const id2 = box.userData.id2 || '';
+            const area = box.userData.area || '';
+
+            if (id1.toUpperCase().includes(q) || id2.toUpperCase().includes(q) || area.toUpperCase().includes(q)) {
                 results.push({
-                    id: name,
+                    id: id1,
+                    id2: id2,
                     shelf: box.userData.shelf,
                     level: box.userData.level,
                     index: box.userData.index,
+                    index2: box.userData.index2,
                     area: box.userData.area
                 });
             }

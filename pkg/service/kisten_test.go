@@ -67,8 +67,17 @@ func TestKistenService(t *testing.T) {
 	if !found || boxA101 == nil {
 		t.Errorf("Expected box A101 to be found")
 	} else {
-		if boxA101.Shelf != "A" || boxA101.Level != 1 || boxA101.Index != 1 {
+		if boxA101.Shelf != "A" || boxA101.Level != 1 || boxA101.Index != 1 || boxA101.ID2 != "A102" || boxA101.Index2 != 2 {
 			t.Errorf("Box A101 data mismatch: %+v", boxA101)
+		}
+	}
+
+	boxA201, foundA201 := svc.GetBoxByID("A201")
+	if !foundA201 || boxA201 == nil {
+		t.Errorf("Expected box A201 to be found")
+	} else {
+		if boxA201.ID2 != "A203" || boxA201.Index2 != 3 {
+			t.Errorf("Box A201 ID2 mismatch: %+v", boxA201)
 		}
 	}
 

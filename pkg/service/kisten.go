@@ -106,11 +106,15 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 			lvlNum, _ := strconv.Atoi(lvlKey)
 			for i := 1; i <= boxes; i++ {
 				boxID := model.FormatBoxID(key, lvlNum, i)
+				oppIndex := boxes - i + 1
+				boxID2 := model.FormatBoxID(key, lvlNum, oppIndex)
 				item := model.BoxItem{
 					ID:         boxID,
+					ID2:        boxID2,
 					Shelf:      key,
 					Level:      lvlNum,
 					Index:      i,
+					Index2:     oppIndex,
 					Area:       rawShelf.Area,
 					Aside:      rawShelf.Aside,
 					TotalInLvl: boxes,
