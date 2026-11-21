@@ -61,9 +61,10 @@ func main() {
 	go func() {
 		fmt.Println("================================================================")
 		fmt.Printf("  %s\n", cfg.Title)
-		fmt.Printf("  Running on: http://localhost:%d\n", cfg.Port)
-		fmt.Printf("  Embed URL:  http://localhost:%d/embed\n", cfg.Port)
-		fmt.Printf("  API URL:    http://localhost:%d/api/boxes\n", cfg.Port)
+		fmt.Printf("  Running on:  http://localhost:%d\n", cfg.Port)
+		fmt.Printf("  Embed URL:   http://localhost:%d/embed\n", cfg.Port)
+		fmt.Printf("  Splines 2D:  http://localhost:%d/splines\n", cfg.Port)
+		fmt.Printf("  API URL:     http://localhost:%d/api/boxes\n", cfg.Port)
 		fmt.Println("================================================================")
 
 		if err := srv.ListenAndServe(); err != nil {

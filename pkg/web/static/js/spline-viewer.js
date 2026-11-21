@@ -257,7 +257,8 @@ export class SplineViewer {
             // Update live coordinate HUD
             if (this.coordValEl) {
                 const inBounds = imgCoord.x >= 0 && imgCoord.x <= this.imgWidth && imgCoord.y >= 0 && imgCoord.y <= this.imgHeight;
-                this.coordValEl.textContent = `X: ${this.mousePos.imgX} | Y: ${this.mousePos.imgY}${inBounds ? '' : ' (außerhalb)'}`;
+                const jsonY = this.imgHeight - this.mousePos.imgY;
+                this.coordValEl.innerHTML = `Cursor: X: ${this.mousePos.imgX} | Y (Plan): ${this.mousePos.imgY} <span style="opacity:0.85;margin-left:0.25rem;">[kistendata: X: ${this.mousePos.imgX}, Y: ${jsonY}]</span>${inBounds ? '' : ' (außerhalb)'}`;
             }
 
             if (this.isDragging) {
@@ -422,10 +423,11 @@ export class SplineViewer {
                     html += `<div class="tooltip-row">Ausrichtung: <strong>${shelf.aside || 'N/A'}</strong></div>`;
                 }
                 if (hit.point) {
+                    const origY = hit.point.origY !== undefined ? hit.point.origY : (this.imgHeight - hit.point.y);
                     html += `<div class="tooltip-divider"></div>`;
                     html += `<div class="tooltip-row">Punkt ${hit.point.index + 1} von ${shelf.point.length}</div>`;
-                    const yInfo = hit.point.origY !== undefined ? `Y: ${hit.point.y} <span style="opacity:0.75;font-size:0.85em;">(3D: ${hit.point.origY})</span>` : `Y: ${hit.point.y}`;
-                    html += `<div class="tooltip-coords">X: ${hit.point.x} | ${yInfo}</div>`;
+                    html += `<div class="tooltip-coords"><strong>kistendata.json:</strong> X: ${hit.point.x} | Y: ${origY}</div>`;
+                    html += `<div class="tooltip-coords" style="opacity:0.8;font-size:0.85em;">Plan-2D: X: ${hit.point.x} | Y: ${hit.point.y}</div>`;
                 }
 
                 this.tooltipEl.innerHTML = html;
@@ -636,7 +638,8 @@ export class SplineViewer {
                     <tr>
                         <th>#</th>
                         <th>X</th>
-                        <th>Y</th>
+                        <th>Y (JSON)</th>
+                        <th>Y (Plan)</th>
                         <th>Aktion</th>
                     </tr>
                 </thead>
@@ -644,12 +647,13 @@ export class SplineViewer {
         `;
 
         shelf.point.forEach((p, idx) => {
-            const yDisplay = p.origY !== undefined ? `${p.y} <span style="color:var(--text-secondary);font-size:0.85em;">(3D: ${p.origY})</span>` : `${p.y}`;
+            const origY = p.origY !== undefined ? p.origY : (this.imgHeight - p.y);
             html += `
                 <tr data-point-idx="${idx}">
                     <td><strong>P${idx + 1}</strong></td>
                     <td>${p.x}</td>
-                    <td>${yDisplay}</td>
+                    <td><strong style="color:var(--accent-hover);">${origY}</strong></td>
+                    <td>${p.y}</td>
                     <td><button class="btn-focus-point" data-x="${p.x}" data-y="${p.y}" title="Punkt zentrieren">🎯</button></td>
                 </tr>
             `;
@@ -843,15 +847,17 @@ export class SplineViewer {
 
                     // Point Coordinates Label
                     if (this.layers.showPointCoords && (isSelected || isPtHovered || this.transform.scale > 1.2)) {
+                        const origY = pt.origY !== undefined ? pt.origY : (this.imgHeight - pt.y);
                         const fontSize = Math.max(9, Math.min(13, 10 / this.transform.scale));
-                        ctx.font = `400 ${fontSize}px monospace`;
+                        ctx.font = `600 ${fontSize}px monospace`;
                         ctx.fillStyle = '#f9d56e';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'top';
                         ctx.strokeStyle = '#1c2420';
                         ctx.lineWidth = 2.5 / this.transform.scale;
-                        ctx.strokeText(`(${pt.x}, ${pt.y})`, pt.x, pt.y + radius + (3 / this.transform.scale));
-                        ctx.fillText(`(${pt.x}, ${pt.y})`, pt.x, pt.y + radius + (3 / this.transform.scale));
+                        const labelText = `JSON: (${pt.x}, ${origY})`;
+                        ctx.strokeText(labelText, pt.x, pt.y + radius + (3 / this.transform.scale));
+                        ctx.fillText(labelText, pt.x, pt.y + radius + (3 / this.transform.scale));
                     }
 
                     ctx.restore();
