@@ -151,8 +151,10 @@ export class BoxBuilder {
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
         }
 
+        const textY = canvas.height - Math.round(5 * this.pixelFactor);
+
         // Side 1 text at front opening
-        ctx.fillText(`    ${text1}`, 4 * this.pixelFactor, canvas.height - 2);
+        ctx.fillText(`    ${text1}`, 4 * this.pixelFactor, textY);
 
         // Side 2 text at opposite opening (facing outward from opposite side)
         const secondText = text2 || text1;
@@ -160,7 +162,7 @@ export class BoxBuilder {
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.rotate(Math.PI);
         ctx.translate(-canvas.width / 2, -canvas.height / 2);
-        ctx.fillText(`    ${secondText}`, 4 * this.pixelFactor, canvas.height - 2);
+        ctx.fillText(`    ${secondText}`, 4 * this.pixelFactor, textY);
         ctx.restore();
 
         const texture = new THREE.CanvasTexture(canvas);
