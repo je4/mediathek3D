@@ -501,6 +501,29 @@ export class Mediathek3D extends THREE.Object3D {
     }
 
     /**
+     * Dynamically updates color theme materials and re-renders active highlights.
+     *
+     * @param {Object} theme - Theme configuration object.
+     */
+    setTheme(theme = {}) {
+        if (this.boxBuilder) {
+            this.boxBuilder.setTheme(theme);
+        }
+
+        // Re-apply updated highlight material to currently selected boxes
+        for (const key in this.boxesHighlight) {
+            const box = this.boxesHighlight[key];
+            if (box) {
+                box.traverse((child) => {
+                    if (['top', 'bottom', 'left', 'right'].includes(child.name)) {
+                        child.material = this.boxBuilder.materialBoxHighlight;
+                    }
+                });
+            }
+        }
+    }
+
+    /**
      * Highlights or unhighlights a box by ID across both opening sides.
      *
      * Algorithmic Details:

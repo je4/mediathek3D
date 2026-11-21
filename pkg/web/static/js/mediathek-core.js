@@ -534,6 +534,22 @@ class Mediathek {
     }
 
     /**
+     * Updates the clear / background color of the Three.js WebGL renderer.
+     *
+     * @param {number|string|THREE.Color} color Background color hex or Three.js Color.
+     * @param {number} [alpha=null] Optional opacity (0.0 to 1.0).
+     */
+    setBackgroundColor(color, alpha = null) {
+        this.options.backgroundColor = color;
+        if (alpha !== null) {
+            this.options.clearAlpha = alpha;
+        }
+        if (this.renderer) {
+            this.renderer.setClearColor(this.options.backgroundColor, this.options.clearAlpha);
+        }
+    }
+
+    /**
      * Cleans up WebGL resources and event listeners.
      */
     dispose() {

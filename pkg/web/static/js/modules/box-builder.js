@@ -63,6 +63,37 @@ export class BoxBuilder {
     }
 
     /**
+     * Dynamically updates PBR material colors and emissive properties according to an active theme.
+     *
+     * @param {Object} theme - Theme configuration object.
+     * @param {number} [theme.boxColor] - Main shelf box color (hex).
+     * @param {number} [theme.bottomColor] - Base shelf floor plate color (hex).
+     * @param {number} [theme.boxColorHighlight] - Box selection highlight color (hex).
+     * @param {number} [theme.emissiveHighlight] - Selection glow color (hex).
+     * @param {number} [theme.emissiveIntensity] - Glow intensity.
+     */
+    setTheme(theme = {}) {
+        if (theme.boxColor !== undefined) {
+            this.boxColor = theme.boxColor;
+            this.materialBox.color.setHex(this.boxColor);
+        }
+        if (theme.bottomColor !== undefined) {
+            this.bottomColor = theme.bottomColor;
+            this.materialBottom.color.setHex(this.bottomColor);
+        }
+        if (theme.boxColorHighlight !== undefined) {
+            this.boxColorHighlight = theme.boxColorHighlight;
+            this.materialBoxHighlight.color.setHex(this.boxColorHighlight);
+        }
+        if (theme.emissiveHighlight !== undefined) {
+            this.materialBoxHighlight.emissive.setHex(theme.emissiveHighlight);
+        }
+        if (theme.emissiveIntensity !== undefined) {
+            this.materialBoxHighlight.emissiveIntensity = theme.emissiveIntensity;
+        }
+    }
+
+    /**
      * Constructs the base open box template geometry (bottom, top, left, right walls).
      *
      * @private

@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { Mediathek } from './mediathek-core.js';
 import { Mediathek3D } from './mediathek-3d.js';
 import { UIController } from './modules/ui-controller.js';
+import { ThemeManager, DEFAULT_THEME } from './modules/theme-manager.js';
 
 export class MediathekApp {
     /**
@@ -26,6 +27,7 @@ export class MediathekApp {
      * @param {string} [options.positionsData='static/data/kistenpositions.json'] Precomputed box positions endpoint.
      * @param {string} [options.initialBox=''] Initially highlighted box (from URL or Go template).
      * @param {Array<string>|string} [options.initialShelf=''] Initial shelf filter.
+     * @param {string} [options.theme=''] Initial color theme (e.g. 'ocher', 'sage', 'terracotta', 'classic').
      * @param {string} [options.camJSON=null] Initial camera JSON matrix string.
      * @param {boolean} [options.isEmbed=false] Embedded / minimal UI mode.
      */
@@ -37,17 +39,20 @@ export class MediathekApp {
             positionsData: 'static/data/kistenpositions.json',
             initialBox: '',
             initialShelf: '',
+            theme: '',
             camJSON: null,
             isEmbed: false
         }, options);
 
         this.mediathek = null;
         this.mediathek3D = null;
+        this.themeManager = null;
         this.selectedBoxId = null;
         this.hoveredBoxId = null;
         this.boxesCache = [];
 
         this._parseURLParams();
+        this._initTheme();
         this._initUI();
         this._init3D();
         this._bindRaycastingEvents();
@@ -71,6 +76,10 @@ export class MediathekApp {
             this.options.initialShelf = shelfParam.split(',').map(s => s.trim());
         }
 
+        if (urlParams.has('theme')) {
+            this.options.theme = urlParams.get('theme');
+        }
+
         if (urlParams.has('cam')) {
             this.options.camJSON = urlParams.get('cam');
         }
@@ -78,6 +87,26 @@ export class MediathekApp {
         if (urlParams.has('mode') && urlParams.get('mode') === 'embed') {
             this.options.isEmbed = true;
         }
+    }
+
+    /**
+     * Initializes the ThemeManager with URL parameter, saved localStorage preference, or default theme.
+     * @private
+     */
+    _initTheme() {
+        let initialTheme = this.options.theme;
+        if (!initialTheme && typeof localStorage !== 'undefined') {
+            try {
+                initialTheme = localStorage.getItem('mediathek3d_theme') || DEFAULT_THEME;
+            } catch (e) {
+                initialTheme = DEFAULT_THEME;
+            }
+        }
+        this.themeManager = new ThemeManager({
+            initialTheme: initialTheme || DEFAULT_THEME
+        });
+        // Apply initial theme CSS
+        this.themeManager.setTheme(this.themeManager.currentThemeId, false);
     }
 
     /**
@@ -93,8 +122,12 @@ export class MediathekApp {
             onApplyCamJSON: (camJsonStr) => this._onApplyCamJSON(camJsonStr),
             onResetView: () => this.resetCameraView(),
             onTopView: () => this.setTopCameraView(),
-            onScreenshot: () => this.downloadScreenshot()
+            onScreenshot: () => this.downloadScreenshot(),
+            onThemeChange: (themeId) => this.themeManager.setTheme(themeId, true),
+            onCycleTheme: () => this.themeManager.cycleTheme()
         });
+
+        this.themeManager.attach({ ui: this.ui });
     }
 
     /**
@@ -105,10 +138,12 @@ export class MediathekApp {
         // Show loading overlay
         this.ui.showLoadingOverlay(true);
 
+        const currentTheme = this.themeManager.getCurrentTheme();
+
         // 1. Initialize Mediathek Three.js Scene Engine
         this.mediathek = new Mediathek({
             renderDOM: this.options.containerSelector,
-            backgroundColor: 0x283744,
+            backgroundColor: currentTheme.backgroundColor,
             camType: 'perspective',
             controlType: 'orbit',
             camJSON: this.options.camJSON,
@@ -122,9 +157,9 @@ export class MediathekApp {
             boxData: this.options.boxData,
             positionsData: this.options.positionsData,
             pixelFactor: 4,
-            boxColor: 0xf4f5f7,
-            bottomColor: 0x283744,
-            boxColorHighlight: 0xff2222,
+            boxColor: currentTheme.boxColor,
+            bottomColor: currentTheme.bottomColor,
+            boxColorHighlight: currentTheme.boxColorHighlight,
             drawOnly: this.options.initialShelf ? this.options.initialShelf : null,
             boxDelay: 0
         };
@@ -162,6 +197,11 @@ export class MediathekApp {
      */
     _onSceneReady(m3d) {
         this.ui.showLoadingOverlay(false);
+        this.themeManager.attach({
+            mediathek: this.mediathek,
+            mediathek3D: this.mediathek3D,
+            ui: this.ui
+        });
         this.boxesCache = m3d.boxNames.map(name => {
             const meta = m3d.getBoxMetadata(name) || {};
             return {

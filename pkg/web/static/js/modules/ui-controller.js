@@ -23,6 +23,8 @@ export class UIController {
      * @param {Function} [options.onResetView] - Callback for reset view button.
      * @param {Function} [options.onTopView] - Callback for top-down view button.
      * @param {Function} [options.onScreenshot] - Callback for screenshot button.
+     * @param {Function} [options.onThemeChange] - Callback when theme selection changes (themeId).
+     * @param {Function} [options.onCycleTheme] - Callback to cycle to next theme.
      */
     constructor(options = {}) {
         this.options = options;
@@ -59,7 +61,8 @@ export class UIController {
             helpModal: document.getElementById('help-modal'),
             helpCloseBtn: document.getElementById('help-close-btn'),
             loadingOverlay: document.getElementById('loading-overlay'),
-            shelfFilterSelect: document.getElementById('shelf-filter-select')
+            shelfFilterSelect: document.getElementById('shelf-filter-select'),
+            themeSelect: document.getElementById('theme-select')
         };
 
         this._bindUIEvents();
@@ -197,6 +200,10 @@ export class UIController {
                 }
             } else if (e.key === 'f' || e.key === 'F') {
                 this.toggleFullscreen();
+            } else if (e.key === 'c' || e.key === 'C') {
+                if (typeof this.options.onCycleTheme === 'function') {
+                    this.options.onCycleTheme();
+                }
             } else if (e.key === '/') {
                 e.preventDefault();
                 if (this.dom.searchInput) {
@@ -211,6 +218,16 @@ export class UIController {
                 const selectedShelf = e.target.value;
                 if (typeof this.options.onShelfFilterChange === 'function') {
                     this.options.onShelfFilterChange(selectedShelf);
+                }
+            });
+        }
+
+        // 7. Theme selector dropdown
+        if (this.dom.themeSelect) {
+            this.dom.themeSelect.addEventListener('change', (e) => {
+                const selectedTheme = e.target.value;
+                if (typeof this.options.onThemeChange === 'function') {
+                    this.options.onThemeChange(selectedTheme);
                 }
             });
         }
