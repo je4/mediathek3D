@@ -720,7 +720,7 @@ export class Mediathek3D extends THREE.Object3D {
      * @param {number} [baseElevation=480] - Base height offset above box center in open space (for clear label reading).
      * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null} Computed camera transform or null.
      */
-    getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1150, baseElevation = 480) {
+    getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1450, baseElevation = 450) {
         if (!boxId || !this.boxes) return null;
         const key = boxId.toUpperCase();
         const box = this.boxes[key] || this.boxes[boxId];
@@ -824,8 +824,11 @@ export class Mediathek3D extends THREE.Object3D {
             const lateralDist = Math.abs(dx * perpVector.x + dy * perpVector.y);
 
             // Corridor width: approximately 340 units in front of the box
+            const otherIsBottom = otherMeta.isBottom || (otherBox.userData && otherBox.userData.isBottom);
+            const otherHeight = otherIsBottom ? (this.boxThick || 5) : boxHeight;
+
             if (projDist > 50 && projDist < 2500 && lateralDist < 340) {
-                const otherTopZ = otherPos.z + boxHeight;
+                const otherTopZ = otherPos.z + otherHeight;
                 corridorObstacles.push({
                     projDist,
                     lateralDist,
@@ -839,8 +842,8 @@ export class Mediathek3D extends THREE.Object3D {
         }
 
         // --- Step 4: Calculate camera distance and elevation based on corridor clearance ---
-        const prefDist = typeof preferredDistance === 'number' ? preferredDistance : 1150;
-        const baseElev = typeof baseElevation === 'number' ? baseElevation : 480;
+        const prefDist = typeof preferredDistance === 'number' ? preferredDistance : 1450;
+        const baseElev = typeof baseElevation === 'number' ? baseElevation : 450;
         const minDistance = 550;
 
         let chosenDist = prefDist;
@@ -920,11 +923,11 @@ export class Mediathek3D extends THREE.Object3D {
      *
      * @param {string} boxId - Box identifier (e.g. "A101").
      * @param {string} [side='a'] - Target opening side ('a' for front, 'b' for back).
-     * @param {number} [preferredDistance=1150] - Camera distance.
-     * @param {number} [baseElevation=480] - Camera height offset.
+     * @param {number} [preferredDistance=1450] - Camera distance.
+     * @param {number} [baseElevation=450] - Camera height offset.
      * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null}
      */
-    getBoxSideFocusTransform(boxId, side = 'a', preferredDistance = 1150, baseElevation = 480) {
+    getBoxSideFocusTransform(boxId, side = 'a', preferredDistance = 1450, baseElevation = 450) {
         return this.getBoxFocusTransform(boxId, side, preferredDistance, baseElevation);
     }
 }

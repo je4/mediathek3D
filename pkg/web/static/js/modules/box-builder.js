@@ -301,6 +301,7 @@ export class BoxBuilder {
             id2: oppositeId,
             oppositeId: oppositeId,
             hasb: hasB,
+            isBottom: true,
             name: baseName,
             shelf: shelfKey,
             level: lvlNum,
