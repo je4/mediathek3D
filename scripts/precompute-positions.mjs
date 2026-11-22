@@ -84,21 +84,21 @@ export function generateBoxPositions(kistenData, options = {}) {
 
             for (let counter = 0; counter < totalBoxes; counter++) {
                 const num1 = counter + 1;
-                const num2 = totalBoxes - counter;
                 const numStr1 = (num1 < 10 ? '0' : '') + num1;
-                const numStr2 = (num2 < 10 ? '0' : '') + num2;
-                const boxname1 = `${shelfKey}${levelKey}${numStr1}`;
-                const boxname2 = `${shelfKey}${levelKey}${numStr2}`;
+                const baseName = `${shelfKey}${levelKey}${numStr1}`;
+                const boxname1 = `${baseName}a`;
+                const boxname2 = `${baseName}b`;
 
                 const transform = levelTransforms[counter] || splineCalc.calculateBoxTransform(spline, counter, indent, levelNum);
 
                 const boxItem = {
                     id: boxname1,
                     id2: boxname2,
+                    name: baseName,
                     shelf: shelfKey,
                     level: levelNum,
                     index: num1,
-                    index2: num2,
+                    index2: num1,
                     area: shelf.area || '',
                     aside: shelf.aside || 'right',
                     totalInLvl: totalBoxes,

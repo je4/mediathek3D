@@ -314,7 +314,8 @@ export class Mediathek3D extends THREE.Object3D {
         // Render boxes (instant or progressive)
         if (this.boxDelay <= 0) {
             for (let i = 0; i < this.boxNames.length; i++) {
-                const box = this.boxes[this.boxNames[i]];
+                const name = this.boxNames[i];
+                const box = this.boxes[name] || this.boxes[name.toUpperCase()];
                 if (box) this.add(box);
             }
         } else {
@@ -339,9 +340,10 @@ export class Mediathek3D extends THREE.Object3D {
         for (let i = 0; i < boxes.length; i++) {
             const item = boxes[i];
             const boxname1 = item.id;
-            const boxname2 = item.id2 || boxname1;
-            const shelfKey = item.shelf || boxname1.charAt(0);
-            const levelNum = item.level || parseInt(boxname1.charAt(1), 10) || 1;
+            const boxname2 = item.id2 || (boxname1.endsWith('a') ? boxname1.replace(/a$/i, 'b') : (boxname1.endsWith('b') ? boxname1.replace(/b$/i, 'a') : boxname1));
+            const baseName = item.name || boxname1.replace(/[ab]$/i, '');
+            const shelfKey = item.shelf || baseName.charAt(0);
+            const levelNum = item.level || parseInt(baseName.charAt(1), 10) || 1;
 
             let box = null;
             if (this.drawOnly === null) {
@@ -349,8 +351,8 @@ export class Mediathek3D extends THREE.Object3D {
             } else {
                 let match = false;
                 for (let j = 0; j < this.drawOnly.length; j++) {
-                    const filter = this.drawOnly[j];
-                    if (filter === boxname1 || filter === boxname2 || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                    const filter = this.drawOnly[j].toUpperCase();
+                    if (filter === boxname1.toUpperCase() || filter === boxname2.toUpperCase() || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
                         match = true;
                         break;
                     }
@@ -373,6 +375,11 @@ export class Mediathek3D extends THREE.Object3D {
             box.name = boxname1;
 
             this.boxes[boxname1] = box;
+            this.boxes[boxname1.toUpperCase()] = box;
+            this.boxes[boxname2] = box;
+            this.boxes[boxname2.toUpperCase()] = box;
+            this.boxes[baseName] = box;
+            this.boxes[baseName.toUpperCase()] = box;
             this.boxNames.push(boxname1);
         }
     }
@@ -443,11 +450,10 @@ export class Mediathek3D extends THREE.Object3D {
 
         for (let counter = 0; counter < totalBoxes; counter++) {
             const num1 = counter + 1;
-            const num2 = totalBoxes - counter;
             const numStr1 = (num1 < 10 ? '0' : '') + num1;
-            const numStr2 = (num2 < 10 ? '0' : '') + num2;
-            const boxname1 = `${shelfKey}${levelKey}${numStr1}`;
-            const boxname2 = `${shelfKey}${levelKey}${numStr2}`;
+            const baseName = `${shelfKey}${levelKey}${numStr1}`;
+            const boxname1 = `${baseName}a`;
+            const boxname2 = `${baseName}b`;
 
             let box = null;
             if (this.drawOnly === null) {
@@ -455,8 +461,8 @@ export class Mediathek3D extends THREE.Object3D {
             } else {
                 let match = false;
                 for (let i = 0; i < this.drawOnly.length; i++) {
-                    const filter = this.drawOnly[i];
-                    if (filter === boxname1 || filter === boxname2 || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                    const filter = this.drawOnly[i].toUpperCase();
+                    if (filter === boxname1.toUpperCase() || filter === boxname2.toUpperCase() || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
                         match = true;
                         break;
                     }
@@ -479,6 +485,11 @@ export class Mediathek3D extends THREE.Object3D {
             box.name = boxname1;
 
             this.boxes[boxname1] = box;
+            this.boxes[boxname1.toUpperCase()] = box;
+            this.boxes[boxname2] = box;
+            this.boxes[boxname2.toUpperCase()] = box;
+            this.boxes[baseName] = box;
+            this.boxes[baseName.toUpperCase()] = box;
             this.boxNames.push(boxname1);
         }
     }
@@ -492,7 +503,7 @@ export class Mediathek3D extends THREE.Object3D {
     renderBoxes(index = 0) {
         if (index >= this.boxNames.length) return;
         const boxName = this.boxNames[index];
-        const box = this.boxes[boxName];
+        const box = this.boxes[boxName] || (boxName ? this.boxes[boxName.toUpperCase()] : null);
         if (box && !box.parent) {
             this.add(box);
         }
@@ -541,7 +552,7 @@ export class Mediathek3D extends THREE.Object3D {
     boxHighlight(boxname, highlight = true, customColor = null) {
         if (!boxname) return;
         const key = boxname.toUpperCase();
-        const box = this.boxes[key];
+        const box = this.boxes[key] || this.boxes[boxname];
         if (!box) {
             console.warn(`Mediathek3D: Box "${key}" does not exist`);
             return;
@@ -559,13 +570,17 @@ export class Mediathek3D extends THREE.Object3D {
 
         if (highlight) {
             this.boxesHighlight[key] = box;
-            if (box.userData && box.userData.id2 && box.userData.id2 !== key) {
-                this.boxesHighlight[box.userData.id2] = box;
+            if (box.userData) {
+                if (box.userData.id) this.boxesHighlight[box.userData.id.toUpperCase()] = box;
+                if (box.userData.id2) this.boxesHighlight[box.userData.id2.toUpperCase()] = box;
+                if (box.userData.name) this.boxesHighlight[box.userData.name.toUpperCase()] = box;
             }
         } else {
             delete this.boxesHighlight[key];
-            if (box.userData && box.userData.id2) {
-                delete this.boxesHighlight[box.userData.id2];
+            if (box.userData) {
+                if (box.userData.id) delete this.boxesHighlight[box.userData.id.toUpperCase()];
+                if (box.userData.id2) delete this.boxesHighlight[box.userData.id2.toUpperCase()];
+                if (box.userData.name) delete this.boxesHighlight[box.userData.name.toUpperCase()];
             }
         }
     }
@@ -590,7 +605,7 @@ export class Mediathek3D extends THREE.Object3D {
     selectBox(boxname, color = null) {
         if (!boxname) return null;
         const key = boxname.toUpperCase();
-        const box = this.boxes[key];
+        const box = this.boxes[key] || this.boxes[boxname];
         if (!box) return null;
 
         this.clearHighlights();
@@ -614,17 +629,19 @@ export class Mediathek3D extends THREE.Object3D {
 
         for (let i = 0; i < this.boxNames.length; i++) {
             const name = this.boxNames[i];
-            const box = this.boxes[name];
+            const box = this.boxes[name] || this.boxes[name.toUpperCase()];
             if (!box || !box.userData) continue;
 
             const id1 = box.userData.id || name;
             const id2 = box.userData.id2 || '';
+            const boxName = box.userData.name || '';
             const area = box.userData.area || '';
 
-            if (id1.toUpperCase().includes(q) || id2.toUpperCase().includes(q) || area.toUpperCase().includes(q)) {
+            if (id1.toUpperCase().includes(q) || id2.toUpperCase().includes(q) || boxName.toUpperCase().includes(q) || area.toUpperCase().includes(q)) {
                 results.push({
                     id: id1,
                     id2: id2,
+                    name: boxName,
                     shelf: box.userData.shelf,
                     level: box.userData.level,
                     index: box.userData.index,
@@ -645,7 +662,7 @@ export class Mediathek3D extends THREE.Object3D {
      */
     getBoxMetadata(boxname) {
         if (!boxname) return null;
-        const box = this.boxes[boxname.toUpperCase()];
+        const box = this.boxes[boxname.toUpperCase()] || this.boxes[boxname];
         return box ? box.userData : null;
     }
 
@@ -698,7 +715,7 @@ export class Mediathek3D extends THREE.Object3D {
     getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1150, baseElevation = 320) {
         if (!boxId || !this.boxes) return null;
         const key = boxId.toUpperCase();
-        const box = this.boxes[key];
+        const box = this.boxes[key] || this.boxes[boxId];
         if (!box) return null;
 
         const worldPos = new THREE.Vector3();

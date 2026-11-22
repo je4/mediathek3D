@@ -26,18 +26,24 @@ type Shelf struct {
 
 // BoxItem represents an individual physical box within a shelf unit and level.
 type BoxItem struct {
-	ID         string `json:"id"`               // Primary ID (e.g. "A101")
-	ID2        string `json:"id2,omitempty"`    // Opposite side ID (e.g. "A107")
-	Shelf      string `json:"shelf"`            // Shelf letter (e.g. "A")
+	ID         string `json:"id"`               // Primary ID / Side A (e.g. "P101a")
+	ID2        string `json:"id2,omitempty"`    // Opposite side ID / Side B (e.g. "P101b")
+	Name       string `json:"name,omitempty"`   // Base box name without side suffix (e.g. "P101")
+	Shelf      string `json:"shelf"`            // Shelf letter (e.g. "P")
 	Level      int    `json:"level"`            // Level number (e.g. 1)
 	Index      int    `json:"index"`            // Box index within level (e.g. 1)
-	Index2     int    `json:"index2,omitempty"` // Opposite box index (e.g. 7)
+	Index2     int    `json:"index2,omitempty"` // Opposite box index (e.g. 1)
 	Area       string `json:"area"`             // Functional area name (e.g. "Backoffice")
 	Aside      string `json:"aside"`            // Aside orientation ("left" or "right")
 	TotalInLvl int    `json:"totalInLvl"`       // Total boxes on this level
 }
 
-// FormatBoxID formats shelf letter, level index, and box index into a standard 4-character ID (e.g. "A101").
+// FormatBoxID formats shelf letter, level index, and box index into a standard base ID (e.g. "P101").
 func FormatBoxID(shelf string, level int, index int) string {
 	return fmt.Sprintf("%s%d%02d", shelf, level, index)
+}
+
+// FormatBoxSideID formats shelf letter, level index, box index, and side ('a' or 'b') into a box side ID (e.g. "P101a").
+func FormatBoxSideID(shelf string, level int, index int, side string) string {
+	return fmt.Sprintf("%s%d%02d%s", shelf, level, index, side)
 }

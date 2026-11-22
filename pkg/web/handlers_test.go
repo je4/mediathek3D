@@ -193,8 +193,8 @@ func TestBoxesSearchAPI(t *testing.T) {
 
 	if len(results) == 0 {
 		t.Errorf("Expected search results for 'A10', got 0")
-	} else if results[0].ID != "A101" {
-		t.Errorf("Expected first result A101, got %q", results[0].ID)
+	} else if results[0].ID != "A101a" {
+		t.Errorf("Expected first result A101a, got %q", results[0].ID)
 	}
 }
 
@@ -202,6 +202,7 @@ func TestBoxDetailAPI(t *testing.T) {
 	srv, _ := setupTestServer(t)
 	handler := srv.Handler()
 
+	// Test lookup by base ID A101
 	req := httptest.NewRequest("GET", "/api/boxes/A101", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -216,8 +217,24 @@ func TestBoxDetailAPI(t *testing.T) {
 		t.Fatalf("Failed to decode box detail: %v", err)
 	}
 
-	if item.ID != "A101" || item.Area != "Backoffice" {
-		t.Errorf("Unexpected box item detail: %+v", item)
+	if item.ID != "A101a" || item.ID2 != "A101b" || item.Area != "Backoffice" {
+		t.Errorf("Unexpected box item detail for A101: %+v", item)
+	}
+
+	// Test lookup by side A101a
+	reqA := httptest.NewRequest("GET", "/api/boxes/A101a", nil)
+	wA := httptest.NewRecorder()
+	handler.ServeHTTP(wA, reqA)
+	if wA.Result().StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200 for A101a, got %d", wA.Result().StatusCode)
+	}
+
+	// Test lookup by side A101b
+	reqB := httptest.NewRequest("GET", "/api/boxes/A101b", nil)
+	wB := httptest.NewRecorder()
+	handler.ServeHTTP(wB, reqB)
+	if wB.Result().StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200 for A101b, got %d", wB.Result().StatusCode)
 	}
 }
 

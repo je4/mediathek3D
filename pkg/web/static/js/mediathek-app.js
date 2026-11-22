@@ -27,7 +27,7 @@ export class MediathekApp {
      * @param {string} [options.positionsData='static/data/kistenpositions.json'] Precomputed box positions endpoint.
      * @param {string} [options.initialBox=''] Initially highlighted box (from URL or Go template).
      * @param {Array<string>|string} [options.initialShelf=''] Initial shelf filter.
-     * @param {string} [options.theme=''] Initial color theme (e.g. 'ocher', 'sage', 'terracotta', 'classic').
+     * @param {string} [options.theme=''] Initial color theme (e.g. 'ocher', 'sage', 'olive', 'terracotta', 'classic').
      * @param {string} [options.camJSON=null] Initial camera JSON matrix string.
      * @param {boolean} [options.isEmbed=false] Embedded / minimal UI mode.
      */
@@ -204,13 +204,15 @@ export class MediathekApp {
         });
         this.boxesCache = m3d.boxNames.map(name => {
             const meta = m3d.getBoxMetadata(name) || {};
+            const baseName = meta.name || name.replace(/[ab]$/i, '');
             return {
                 id: name,
                 id2: meta.id2 || name,
+                name: baseName,
                 shelf: meta.shelf || name.charAt(0),
-                level: meta.level || parseInt(name.charAt(1), 10) || 1,
-                index: meta.index || parseInt(name.substring(2), 10) || 1,
-                index2: meta.index2 || (meta.id2 ? parseInt(meta.id2.substring(2), 10) : 1),
+                level: meta.level || parseInt(baseName.charAt(1), 10) || 1,
+                index: meta.index || parseInt(baseName.substring(2), 10) || 1,
+                index2: meta.index2 || meta.index || 1,
                 area: meta.area || ''
             };
         });
@@ -364,7 +366,7 @@ export class MediathekApp {
                 if (obj.userData && obj.userData.id) {
                     return obj;
                 }
-                if (this.mediathek3D.boxes[obj.name]) {
+                if (obj.name && this.mediathek3D.boxes && (this.mediathek3D.boxes[obj.name] || this.mediathek3D.boxes[obj.name.toUpperCase()])) {
                     return obj;
                 }
                 obj = obj.parent;
@@ -445,6 +447,7 @@ export class MediathekApp {
         const matches = this.boxesCache.filter(b => 
             b.id.toUpperCase().includes(q) || 
             (b.id2 && b.id2.toUpperCase().includes(q)) || 
+            (b.name && b.name.toUpperCase().includes(q)) ||
             (b.area && b.area.toUpperCase().includes(q))
         ).slice(0, 8);
         this.ui.renderSearchResults(matches);

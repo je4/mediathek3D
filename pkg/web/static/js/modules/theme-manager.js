@@ -58,6 +58,30 @@ export const COLOR_THEMES = {
             textMuted: '#7f9488'
         }
     },
+    olive: {
+        id: 'olive',
+        name: 'Olivenhain',
+        label: 'Olivenhain',
+        description: 'Mediterrane Olivtöne, warmes Khaki & geölte Holzstrukturen',
+        boxColor: 0xf4f5f7,
+        bottomColor: 0x33362a,          // Warmes Oliv-Grafit / Umbra-Moos
+        boxColorHighlight: 0x8ba336,    // Sattes warmes Olivgrün
+        emissiveHighlight: 0x242e0a,
+        emissiveIntensity: 0.45,
+        backgroundColor: 0x1f231c,      // Dunkler Oliv-Anthrazit Hintergrund
+        ui: {
+            bgDark: '#1f231c',
+            bgPanel: 'rgba(31, 35, 28, 0.88)',
+            bgPanelHover: 'rgba(43, 49, 39, 0.95)',
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderFocus: '#a5c040',
+            accentColor: '#8ba336',
+            accentHover: '#a5c040',
+            textPrimary: '#ffffff',
+            textSecondary: '#d2d7cc',
+            textMuted: '#8c9680'
+        }
+    },
     terracotta: {
         id: 'terracotta',
         name: 'Warm Terrakotta',
@@ -142,6 +166,7 @@ export class ThemeManager {
 
         // Aliases / keywords
         if (clean.includes('ocker') || clean.includes('ocher') || clean.includes('yellow') || clean.includes('lounge')) return 'ocher';
+        if (clean.includes('olive') || clean.includes('olivenhain') || clean.includes('khaki')) return 'olive';
         if (clean.includes('salbei') || clean.includes('sage') || clean.includes('green') || clean.includes('natur')) return 'sage';
         if (clean.includes('terra') || clean.includes('orange') || clean.includes('mokka') || clean.includes('warm')) return 'terracotta';
         if (clean.includes('classic') || clean.includes('klassisch') || clean.includes('red') || clean.includes('blue')) return 'classic';
@@ -160,7 +185,7 @@ export class ThemeManager {
     /**
      * Sets and applies a theme by ID.
      *
-     * @param {string} themeId - 'ocher', 'sage', 'terracotta', or 'classic'
+     * @param {string} themeId - 'ocher', 'sage', 'olive', 'terracotta', or 'classic'
      * @param {boolean} [persist=true] - Whether to save to localStorage
      * @returns {Object} The applied theme configuration
      */

@@ -25,3 +25,25 @@ func TestFormatBoxID(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatBoxSideID(t *testing.T) {
+	tests := []struct {
+		shelf    string
+		level    int
+		index    int
+		side     string
+		expected string
+	}{
+		{"P", 1, 1, "a", "P101a"},
+		{"P", 1, 1, "b", "P101b"},
+		{"A", 2, 7, "a", "A207a"},
+		{"A", 2, 7, "b", "A207b"},
+	}
+
+	for _, tt := range tests {
+		result := model.FormatBoxSideID(tt.shelf, tt.level, tt.index, tt.side)
+		if result != tt.expected {
+			t.Errorf("FormatBoxSideID(%q, %d, %d, %q) = %q; want %q", tt.shelf, tt.level, tt.index, tt.side, result, tt.expected)
+		}
+	}
+}

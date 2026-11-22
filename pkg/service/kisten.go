@@ -105,22 +105,25 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 
 			lvlNum, _ := strconv.Atoi(lvlKey)
 			for i := 1; i <= boxes; i++ {
-				boxID := model.FormatBoxID(key, lvlNum, i)
-				oppIndex := boxes - i + 1
-				boxID2 := model.FormatBoxID(key, lvlNum, oppIndex)
+				baseID := model.FormatBoxID(key, lvlNum, i)
+				boxID := model.FormatBoxSideID(key, lvlNum, i, "a")
+				boxID2 := model.FormatBoxSideID(key, lvlNum, i, "b")
 				item := model.BoxItem{
 					ID:         boxID,
 					ID2:        boxID2,
+					Name:       baseID,
 					Shelf:      key,
 					Level:      lvlNum,
 					Index:      i,
-					Index2:     oppIndex,
+					Index2:     i,
 					Area:       rawShelf.Area,
 					Aside:      rawShelf.Aside,
 					TotalInLvl: boxes,
 				}
 				allBoxes = append(allBoxes, item)
-				boxMap[boxID] = item
+				boxMap[strings.ToUpper(boxID)] = item
+				boxMap[strings.ToUpper(boxID2)] = item
+				boxMap[strings.ToUpper(baseID)] = item
 			}
 		}
 
@@ -215,6 +218,8 @@ func (s *kistenService) SearchBoxes(query string, limit int) []model.BoxItem {
 	var results []model.BoxItem
 	for _, box := range s.boxes {
 		if strings.Contains(strings.ToUpper(box.ID), q) ||
+			strings.Contains(strings.ToUpper(box.ID2), q) ||
+			strings.Contains(strings.ToUpper(box.Name), q) ||
 			strings.EqualFold(box.Shelf, q) ||
 			strings.Contains(strings.ToUpper(box.Area), q) {
 			results = append(results, box)

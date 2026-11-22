@@ -39,6 +39,21 @@
     --box-body: #f4f5f7;
 }
 
+[data-theme="olive"] {
+    --bg-dark: #1f231c;
+    --bg-panel: rgba(31, 35, 28, 0.88);
+    --bg-panel-hover: rgba(43, 49, 39, 0.95);
+    --border-color: rgba(255, 255, 255, 0.15);
+    --border-focus: #a5c040;
+    --accent-color: #8ba336;
+    --accent-hover: #a5c040;
+    --text-primary: #ffffff;
+    --text-secondary: #d2d7cc;
+    --text-muted: #8c9680;
+    --shelf-bottom: #33362a;
+    --box-body: #f4f5f7;
+}
+
 [data-theme="terracotta"] {
     --bg-dark: #221e1d;
     --bg-panel: rgba(37, 32, 31, 0.88);

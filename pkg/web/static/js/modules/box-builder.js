@@ -213,7 +213,8 @@ export class BoxBuilder {
         const shelfKey = fullname.charAt(0);
         const aside = shelfData.aside || 'right';
         const area = shelfData.area || '';
-        const oppositeId = fullname2 || fullname;
+        const oppositeId = fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname));
+        const baseName = fullname.replace(/[ab]$/i, '');
 
         const box = this.boxTemplate.clone();
         box.name = fullname;
@@ -235,15 +236,19 @@ export class BoxBuilder {
         labelMesh.name = "label";
         box.add(labelMesh);
 
+        const lvlNum = parseInt(baseName.charAt(1), 10) || 1;
+        const idxNum = parseInt(baseName.substring(2), 10) || 1;
+
         // Store metadata on box object for interactive raycasting, search and display
         box.userData = {
             id: fullname,
             id2: oppositeId,
             oppositeId: oppositeId,
+            name: baseName,
             shelf: shelfKey,
-            level: parseInt(fullname.charAt(1), 10) || 1,
-            index: parseInt(fullname.substring(2), 10) || 1,
-            index2: parseInt(oppositeId.substring(2), 10) || 1,
+            level: lvlNum,
+            index: idxNum,
+            index2: idxNum,
             aside: aside,
             area: area
         };
@@ -254,15 +259,16 @@ export class BoxBuilder {
     /**
      * Creates a bottom plate placeholder mesh for level 1 when higher levels are filtered out.
      *
-     * @param {string} fullname - Primary box identifier (e.g. "A101").
+     * @param {string} fullname - Primary box identifier (e.g. "A101a").
      * @param {Object} [shelfData={}] - Shelf metadata.
-     * @param {string} [fullname2=''] - Opposite side box identifier (e.g. "A107").
+     * @param {string} [fullname2=''] - Opposite side box identifier (e.g. "A101b").
      * @returns {THREE.Object3D} Instantiated bottom plate mesh with label and userData.
      */
     createBottom(fullname, shelfData = {}, fullname2 = '') {
         const shelfKey = fullname.charAt(0);
         const aside = shelfData.aside || 'right';
-        const oppositeId = fullname2 || fullname;
+        const oppositeId = fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname));
+        const baseName = fullname.replace(/[ab]$/i, '');
 
         const box = this.bottomTemplate.clone();
         box.name = fullname;
@@ -282,14 +288,18 @@ export class BoxBuilder {
         labelMesh.position.set(0, 0, this.boxThick + 1);
         box.add(labelMesh);
 
+        const lvlNum = parseInt(baseName.charAt(1), 10) || 1;
+        const idxNum = parseInt(baseName.substring(2), 10) || 1;
+
         box.userData = {
             id: fullname,
             id2: oppositeId,
             oppositeId: oppositeId,
+            name: baseName,
             shelf: shelfKey,
-            level: parseInt(fullname.charAt(1), 10) || 1,
-            index: parseInt(fullname.substring(2), 10) || 1,
-            index2: parseInt(oppositeId.substring(2), 10) || 1,
+            level: lvlNum,
+            index: idxNum,
+            index2: idxNum,
             aside: aside,
             area: shelfData.area || ''
         };

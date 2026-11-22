@@ -62,22 +62,32 @@ func TestKistenService(t *testing.T) {
 		t.Errorf("Expected 6 boxes, got %d", len(boxes))
 	}
 
-	// Check specific box lookup
+	// Check specific box lookup by base ID, side a, and side b
 	boxA101, found := svc.GetBoxByID("A101")
 	if !found || boxA101 == nil {
 		t.Errorf("Expected box A101 to be found")
 	} else {
-		if boxA101.Shelf != "A" || boxA101.Level != 1 || boxA101.Index != 1 || boxA101.ID2 != "A102" || boxA101.Index2 != 2 {
+		if boxA101.Shelf != "A" || boxA101.Level != 1 || boxA101.Index != 1 || boxA101.ID != "A101a" || boxA101.ID2 != "A101b" || boxA101.Name != "A101" {
 			t.Errorf("Box A101 data mismatch: %+v", boxA101)
 		}
+	}
+
+	boxA101a, foundA101a := svc.GetBoxByID("a101a")
+	if !foundA101a || boxA101a == nil || boxA101a.ID != "A101a" {
+		t.Errorf("Expected box a101a to be found by side a: %+v", boxA101a)
+	}
+
+	boxA101b, foundA101b := svc.GetBoxByID("A101b")
+	if !foundA101b || boxA101b == nil || boxA101b.ID2 != "A101b" {
+		t.Errorf("Expected box A101b to be found by side b: %+v", boxA101b)
 	}
 
 	boxA201, foundA201 := svc.GetBoxByID("A201")
 	if !foundA201 || boxA201 == nil {
 		t.Errorf("Expected box A201 to be found")
 	} else {
-		if boxA201.ID2 != "A203" || boxA201.Index2 != 3 {
-			t.Errorf("Box A201 ID2 mismatch: %+v", boxA201)
+		if boxA201.ID != "A201a" || boxA201.ID2 != "A201b" {
+			t.Errorf("Box A201 ID/ID2 mismatch: %+v", boxA201)
 		}
 	}
 
@@ -95,6 +105,16 @@ func TestKistenService(t *testing.T) {
 	searchResults := svc.SearchBoxes("Backoffice", 10)
 	if len(searchResults) != 5 {
 		t.Errorf("Expected 5 boxes in Backoffice search, got %d", len(searchResults))
+	}
+
+	searchBySideA := svc.SearchBoxes("A101a", 10)
+	if len(searchBySideA) != 1 || searchBySideA[0].ID != "A101a" {
+		t.Errorf("Expected search for A101a to return 1 match, got %+v", searchBySideA)
+	}
+
+	searchByBase := svc.SearchBoxes("A101", 10)
+	if len(searchByBase) != 1 || searchByBase[0].Name != "A101" {
+		t.Errorf("Expected search for A101 to return 1 match, got %+v", searchByBase)
 	}
 
 	summary := svc.GetSummary()
