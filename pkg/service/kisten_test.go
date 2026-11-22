@@ -25,6 +25,15 @@ func TestKistenService(t *testing.T) {
 			"level": {
 				"1": {"indent": 0, "boxes": 1}
 			}
+		},
+		"T": {
+			"point": [{"x": 1100, "y": 600}, {"x": 1700, "y": 600}],
+			"aside": "right",
+			"hasb": false,
+			"area": "Regal",
+			"level": {
+				"1": {"indent": 0, "boxes": 2}
+			}
 		}
 	}`)
 
@@ -35,8 +44,42 @@ func TestKistenService(t *testing.T) {
 
 	// Verify shelves
 	shelves := svc.GetShelves()
-	if len(shelves) != 2 {
-		t.Errorf("Expected 2 shelves, got %d", len(shelves))
+	if len(shelves) != 3 {
+		t.Errorf("Expected 3 shelves, got %d", len(shelves))
+	}
+
+	shelfT, okT := svc.GetShelf("T")
+	if !okT || shelfT == nil {
+		t.Fatalf("Expected shelf T to exist")
+	}
+	if shelfT.HasBSide() {
+		t.Errorf("Expected shelf T HasBSide() to be false")
+	}
+
+	// Verify boxes: A has 5, B has 1, T has 2 => 8 total
+	boxes := svc.GetAllBoxes()
+	if len(boxes) != 8 {
+		t.Errorf("Expected 8 boxes, got %d", len(boxes))
+	}
+
+	// Box T101 should only have Side A ("T101a") and no Side B
+	boxT101, foundT101 := svc.GetBoxByID("T101")
+	if !foundT101 || boxT101 == nil {
+		t.Errorf("Expected box T101 to be found")
+	} else {
+		if boxT101.ID != "T101a" || boxT101.ID2 != "" || boxT101.Name != "T101" {
+			t.Errorf("Expected box T101 to have ID 'T101a' and empty ID2, got: %+v", boxT101)
+		}
+	}
+
+	boxT101a, foundT101a := svc.GetBoxByID("T101a")
+	if !foundT101a || boxT101a == nil {
+		t.Errorf("Expected box T101a to be found")
+	}
+
+	_, foundT101b := svc.GetBoxByID("T101b")
+	if foundT101b {
+		t.Errorf("Expected box T101b to NOT be found since shelf T has no side B")
 	}
 
 	shelfA, ok := svc.GetShelf("A")
@@ -52,14 +95,13 @@ func TestKistenService(t *testing.T) {
 
 	// Verify shelf keys
 	keys := svc.GetShelfKeys()
-	if len(keys) != 2 || keys[0] != "A" || keys[1] != "B" {
+	if len(keys) != 3 || keys[0] != "A" || keys[1] != "B" || keys[2] != "T" {
 		t.Errorf("Unexpected shelf keys: %v", keys)
 	}
 
-	// Verify boxes: A has (2 + 3) = 5 boxes, B has 1 box => 6 total
-	boxes := svc.GetAllBoxes()
-	if len(boxes) != 6 {
-		t.Errorf("Expected 6 boxes, got %d", len(boxes))
+	// Verify boxes: A has (2 + 3) = 5 boxes, B has 1 box, T has 2 boxes => 8 total
+	if len(boxes) != 8 {
+		t.Errorf("Expected 8 boxes, got %d", len(boxes))
 	}
 
 	// Check specific box lookup by base ID, side a, and side b
@@ -118,7 +160,7 @@ func TestKistenService(t *testing.T) {
 	}
 
 	summary := svc.GetSummary()
-	if summary.TotalShelves != 2 || summary.TotalBoxes != 6 {
+	if summary.TotalShelves != 3 || summary.TotalBoxes != 8 {
 		t.Errorf("Unexpected summary: %+v", summary)
 	}
 }

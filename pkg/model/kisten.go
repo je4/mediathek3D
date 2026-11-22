@@ -19,9 +19,18 @@ type LevelInfo struct {
 // configuration of a shelf unit within the Mediathek.
 type Shelf struct {
 	Point []Point              `json:"point"`
-	Aside string               `json:"aside"` // "left" or "right"
+	Aside string               `json:"aside"`          // "left" or "right"
+	HasB  *bool                `json:"hasb,omitempty"` // false if shelf has no B side (defaults to true)
 	Area  string               `json:"area,omitempty"`
 	Level map[string]LevelInfo `json:"level"`
+}
+
+// HasBSide returns whether the shelf has side B (defaults to true when unspecified or nil).
+func (s Shelf) HasBSide() bool {
+	if s.HasB != nil {
+		return *s.HasB
+	}
+	return true
 }
 
 // BoxItem represents an individual physical box within a shelf unit and level.
@@ -33,6 +42,7 @@ type BoxItem struct {
 	Level      int    `json:"level"`            // Level number (e.g. 1)
 	Index      int    `json:"index"`            // Box index within level (e.g. 1)
 	Index2     int    `json:"index2,omitempty"` // Opposite box index (e.g. 1)
+	HasB       *bool  `json:"hasb,omitempty"`   // Whether box has side B (false for single-sided shelves like T)
 	Area       string `json:"area"`             // Functional area name (e.g. "Backoffice")
 	Aside      string `json:"aside"`            // Aside orientation ("left" or "right")
 	TotalInLvl int    `json:"totalInLvl"`       // Total boxes on this level

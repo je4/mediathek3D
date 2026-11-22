@@ -340,7 +340,8 @@ export class Mediathek3D extends THREE.Object3D {
         for (let i = 0; i < boxes.length; i++) {
             const item = boxes[i];
             const boxname1 = item.id;
-            const boxname2 = item.id2 || (boxname1.endsWith('a') ? boxname1.replace(/a$/i, 'b') : (boxname1.endsWith('b') ? boxname1.replace(/b$/i, 'a') : boxname1));
+            const hasB = item.hasb !== undefined ? Boolean(item.hasb) : (item.id2 ? true : (item.shelf === 'T' ? false : true));
+            const boxname2 = item.id2 !== undefined ? item.id2 : (hasB ? (boxname1.endsWith('a') ? boxname1.replace(/a$/i, 'b') : (boxname1.endsWith('b') ? boxname1.replace(/b$/i, 'a') : boxname1)) : '');
             const baseName = item.name || boxname1.replace(/[ab]$/i, '');
             const shelfKey = item.shelf || baseName.charAt(0);
             const levelNum = item.level || parseInt(baseName.charAt(1), 10) || 1;
@@ -352,7 +353,7 @@ export class Mediathek3D extends THREE.Object3D {
                 let match = false;
                 for (let j = 0; j < this.drawOnly.length; j++) {
                     const filter = this.drawOnly[j].toUpperCase();
-                    if (filter === boxname1.toUpperCase() || filter === boxname2.toUpperCase() || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                    if (filter === boxname1.toUpperCase() || (boxname2 && filter === boxname2.toUpperCase()) || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
                         match = true;
                         break;
                     }
@@ -376,8 +377,10 @@ export class Mediathek3D extends THREE.Object3D {
 
             this.boxes[boxname1] = box;
             this.boxes[boxname1.toUpperCase()] = box;
-            this.boxes[boxname2] = box;
-            this.boxes[boxname2.toUpperCase()] = box;
+            if (boxname2) {
+                this.boxes[boxname2] = box;
+                this.boxes[boxname2.toUpperCase()] = box;
+            }
             this.boxes[baseName] = box;
             this.boxes[baseName.toUpperCase()] = box;
             this.boxNames.push(boxname1);
@@ -441,6 +444,7 @@ export class Mediathek3D extends THREE.Object3D {
         if (!spline) return;
 
         const shelf = this.theData[shelfKey];
+        const hasB = shelf && (shelf.hasb !== undefined ? Boolean(shelf.hasb) : (shelf.hasB !== undefined ? Boolean(shelf.hasB) : (shelf.hasBSide !== undefined ? Boolean(shelf.hasBSide) : (shelfKey === 'T' ? false : true))));
         const levelData = shelf.level[levelKey];
         const indent = parseFloat(levelData.indent) || 0;
         const totalBoxes = parseInt(levelData.boxes, 10) || 0;
@@ -453,7 +457,7 @@ export class Mediathek3D extends THREE.Object3D {
             const numStr1 = (num1 < 10 ? '0' : '') + num1;
             const baseName = `${shelfKey}${levelKey}${numStr1}`;
             const boxname1 = `${baseName}a`;
-            const boxname2 = `${baseName}b`;
+            const boxname2 = hasB ? `${baseName}b` : '';
 
             let box = null;
             if (this.drawOnly === null) {
@@ -462,7 +466,7 @@ export class Mediathek3D extends THREE.Object3D {
                 let match = false;
                 for (let i = 0; i < this.drawOnly.length; i++) {
                     const filter = this.drawOnly[i].toUpperCase();
-                    if (filter === boxname1.toUpperCase() || filter === boxname2.toUpperCase() || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
+                    if (filter === boxname1.toUpperCase() || (boxname2 && filter === boxname2.toUpperCase()) || filter === baseName.toUpperCase() || filter === shelfKey || filter.substring(0, 1) === shelfKey) {
                         match = true;
                         break;
                     }
@@ -486,8 +490,10 @@ export class Mediathek3D extends THREE.Object3D {
 
             this.boxes[boxname1] = box;
             this.boxes[boxname1.toUpperCase()] = box;
-            this.boxes[boxname2] = box;
-            this.boxes[boxname2.toUpperCase()] = box;
+            if (boxname2) {
+                this.boxes[boxname2] = box;
+                this.boxes[boxname2.toUpperCase()] = box;
+            }
             this.boxes[baseName] = box;
             this.boxes[baseName.toUpperCase()] = box;
             this.boxNames.push(boxname1);

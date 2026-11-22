@@ -46,6 +46,7 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 	var rawShelves map[string]struct {
 		Point []model.Point `json:"point"`
 		Aside string        `json:"aside"`
+		HasB  *bool         `json:"hasb,omitempty"`
 		Area  string        `json:"area,omitempty"`
 		Level map[string]struct {
 			Indent interface{} `json:"indent"`
@@ -72,9 +73,12 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 		shelf := model.Shelf{
 			Point: rawShelf.Point,
 			Aside: rawShelf.Aside,
+			HasB:  rawShelf.HasB,
 			Area:  rawShelf.Area,
 			Level: make(map[string]model.LevelInfo),
 		}
+
+		hasBSide := shelf.HasBSide()
 
 		for lvlKey, lvlRaw := range rawShelf.Level {
 			var indent float64
@@ -107,7 +111,12 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 			for i := 1; i <= boxes; i++ {
 				baseID := model.FormatBoxID(key, lvlNum, i)
 				boxID := model.FormatBoxSideID(key, lvlNum, i, "a")
-				boxID2 := model.FormatBoxSideID(key, lvlNum, i, "b")
+				var boxID2 string
+				var idx2 int
+				if hasBSide {
+					boxID2 = model.FormatBoxSideID(key, lvlNum, i, "b")
+					idx2 = i
+				}
 				item := model.BoxItem{
 					ID:         boxID,
 					ID2:        boxID2,
@@ -115,14 +124,17 @@ func NewKistenService(jsonData []byte) (KistenService, error) {
 					Shelf:      key,
 					Level:      lvlNum,
 					Index:      i,
-					Index2:     i,
+					Index2:     idx2,
+					HasB:       rawShelf.HasB,
 					Area:       rawShelf.Area,
 					Aside:      rawShelf.Aside,
 					TotalInLvl: boxes,
 				}
 				allBoxes = append(allBoxes, item)
 				boxMap[strings.ToUpper(boxID)] = item
-				boxMap[strings.ToUpper(boxID2)] = item
+				if hasBSide {
+					boxMap[strings.ToUpper(boxID2)] = item
+				}
 				boxMap[strings.ToUpper(baseID)] = item
 			}
 		}

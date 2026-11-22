@@ -64,10 +64,13 @@ export function generateBoxPositions(kistenData, options = {}) {
         const spline = splineCalc.createCurveFromPoints(shelf.point);
         if (!spline) continue;
 
+        const hasB = shelf.hasb !== undefined ? Boolean(shelf.hasb) : (shelf.hasB !== undefined ? Boolean(shelf.hasB) : (shelf.hasBSide !== undefined ? Boolean(shelf.hasBSide) : true));
+
         shelfMap[shelfKey] = {
             name: shelf.name || shelfKey,
             area: shelf.area || '',
             aside: shelf.aside || 'right',
+            hasb: hasB,
             levels: {}
         };
 
@@ -87,7 +90,7 @@ export function generateBoxPositions(kistenData, options = {}) {
                 const numStr1 = (num1 < 10 ? '0' : '') + num1;
                 const baseName = `${shelfKey}${levelKey}${numStr1}`;
                 const boxname1 = `${baseName}a`;
-                const boxname2 = `${baseName}b`;
+                const boxname2 = hasB ? `${baseName}b` : '';
 
                 const transform = levelTransforms[counter] || splineCalc.calculateBoxTransform(spline, counter, indent, levelNum);
 
@@ -98,7 +101,8 @@ export function generateBoxPositions(kistenData, options = {}) {
                     shelf: shelfKey,
                     level: levelNum,
                     index: num1,
-                    index2: num1,
+                    index2: hasB ? num1 : null,
+                    hasb: hasB,
                     area: shelf.area || '',
                     aside: shelf.aside || 'right',
                     totalInLvl: totalBoxes,

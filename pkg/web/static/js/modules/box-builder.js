@@ -188,13 +188,14 @@ export class BoxBuilder {
         ctx.fillText(`    ${text1}`, 4 * this.pixelFactor, textY);
 
         // Side 2 text at opposite opening (facing outward from opposite side)
-        const secondText = text2 || text1;
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(Math.PI);
-        ctx.translate(-canvas.width / 2, -canvas.height / 2);
-        ctx.fillText(`    ${secondText}`, 4 * this.pixelFactor, textY);
-        ctx.restore();
+        if (text2) {
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(Math.PI);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            ctx.fillText(`    ${text2}`, 4 * this.pixelFactor, textY);
+            ctx.restore();
+        }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -213,13 +214,14 @@ export class BoxBuilder {
         const shelfKey = fullname.charAt(0);
         const aside = shelfData.aside || 'right';
         const area = shelfData.area || '';
-        const oppositeId = fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname));
+        const hasB = shelfData.hasb !== undefined ? Boolean(shelfData.hasb) : (shelfData.hasB !== undefined ? Boolean(shelfData.hasB) : (fullname2 !== '' ? true : (shelfKey === 'T' ? false : true)));
+        const oppositeId = hasB ? (fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname))) : '';
         const baseName = fullname.replace(/[ab]$/i, '');
 
         const box = this.boxTemplate.clone();
         box.name = fullname;
 
-        // Render dynamic label texture on floor plane with both side labels
+        // Render dynamic label texture on floor plane with both side labels (or single side if no side b)
         const labelTexture = this.createLabelTexture(fullname, oppositeId, aside, "#1a1a1a");
         const labelMaterial = new THREE.MeshBasicMaterial({
             map: labelTexture,
@@ -244,13 +246,14 @@ export class BoxBuilder {
             id: fullname,
             id2: oppositeId,
             oppositeId: oppositeId,
+            hasb: hasB,
             name: baseName,
             shelf: shelfKey,
             level: lvlNum,
             index: idxNum,
-            index2: idxNum,
+            index2: hasB ? idxNum : null,
             aside: aside,
-            area: area
+            area: shelfData.area || ''
         };
 
         return box;
@@ -267,7 +270,9 @@ export class BoxBuilder {
     createBottom(fullname, shelfData = {}, fullname2 = '') {
         const shelfKey = fullname.charAt(0);
         const aside = shelfData.aside || 'right';
-        const oppositeId = fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname));
+        const area = shelfData.area || '';
+        const hasB = shelfData.hasb !== undefined ? Boolean(shelfData.hasb) : (shelfData.hasB !== undefined ? Boolean(shelfData.hasB) : (fullname2 !== '' ? true : (shelfKey === 'T' ? false : true)));
+        const oppositeId = hasB ? (fullname2 || (fullname.endsWith('a') ? fullname.replace(/a$/i, 'b') : (fullname.endsWith('b') ? fullname.replace(/b$/i, 'a') : fullname))) : '';
         const baseName = fullname.replace(/[ab]$/i, '');
 
         const box = this.bottomTemplate.clone();
@@ -295,11 +300,12 @@ export class BoxBuilder {
             id: fullname,
             id2: oppositeId,
             oppositeId: oppositeId,
+            hasb: hasB,
             name: baseName,
             shelf: shelfKey,
             level: lvlNum,
             index: idxNum,
-            index2: idxNum,
+            index2: hasB ? idxNum : null,
             aside: aside,
             area: shelfData.area || ''
         };
