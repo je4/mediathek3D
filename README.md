@@ -64,6 +64,7 @@ The application supports direct deep linking via URL query parameters and locati
 | `?shelf=<shelves>` | `http://localhost:8080/?shelf=A,B` | Filters display to render only specific shelf units. |
 | `?cam=<camJSON>` | `http://localhost:8080/?cam=[...]` | Initializes camera with a specific 16-element matrix JSON array. |
 | `/embed` | `http://localhost:8080/embed?box=A101` | Clean embeddable mode without headers, optimized for iframes. |
+| `/snapshot` | `http://localhost:8080/snapshot?shelf=A` | Isolated shelf snapshot engine & in-browser batch exporter. |
 | `/splines` | `http://localhost:8080/splines` | Interactive 2D floor plan viewer showing background, points, and Catmull-Rom splines. |
 
 ---
@@ -214,6 +215,50 @@ npm run precompute
 ```
 
 If the precomputed JSON is not available at runtime, the browser seamlessly falls back to dynamic client-side computation. See [docs/PRECOMPUTE.md](docs/PRECOMPUTE.md) for details.
+
+---
+
+## Batch Snapshot Generator (Go Script)
+
+Das Projekt enthält ein Go-Tool (`cmd/snapshot`), um automatisierte 3D-Snapshots für **jede einzelne Kiste (Seite A & Seite B)** zu erzeugen. Dabei wird jeweils **ausschließlich das relevante Regal** isoliert aufgebaut.
+
+Die Ausgabe erfolgt strukturiert in vier dedizierten Unterordnern im Zielverzeichnis:
+- **`raw/`**: Hochauflösende 3D-Originalbilder (1080x1080 Pixel).
+- **`title/`**: Hochauflösende Bilder mit leicht transparenten Balken in Akzentfarbe (oben: linksbündige Kistenbeschriftung z. B. `"A101 a"`, unten: zentrierter Text `"Mediathek HGK"` sowie für Kiste P301a zusätzlich mit `"Information"`).
+- **`raw_small/`**: Skalierte Vorschaubilder im Format 230x230 Pixel (ohne Titel).
+- **`title_small/`**: Skalierte Vorschaubilder im Format 230x230 Pixel (mit Titelbalken).
+
+### Verwendung
+
+```bash
+# Alle Regale & Kisten mit Theme Olivenhain exportieren (Seite A und B)
+go run ./cmd/snapshot --theme olivenhain --out ./snapshots
+
+# Nur bestimmte Regale exportieren
+go run ./cmd/snapshot --theme olivenhain --shelves A,B --out ./snapshots
+
+# Eine einzelne Kiste exportieren
+go run ./cmd/snapshot --theme olivenhain --box A101 --side both --out ./snapshots
+```
+
+#### CLI-Optionen:
+
+| Option / Flag | Standardwert | Beschreibung |
+|---|---|---|
+| `--out`, `-o` | `./snapshots` | Zielordner für die generierten PNG-Dateien |
+| `--theme` | `olive` | Farb-Theme: `olive` / `olivenhain`, `ocher`, `sage`, `terracotta`, `classic` |
+| `--shelves`, `--shelf` | `""` (Alle) | Kommagetrennte Liste von Regalen (z. B. `A,B,P`) |
+| `--box`, `--boxes` | `""` (Alle) | Einzelne oder kommagetrennte Kisten (z. B. `A101`) |
+| `--side` | `both` | Zu erfassende Seiten: `both` (A & B), `a` (nur Vorderseite), `b` (nur Rückseite) |
+| `--width`, `-w` | `1080` | Bildbreite in Pixeln (Standard: quadratisch 1080x1080) |
+| `--height`, `-h` | `1080` | Bildhöhe in Pixeln (Standard: quadratisch 1080x1080) |
+| `--naming` | `flat` | Dateistruktur: `flat` (`<Kiste>a.png`, `<Kiste>b.png`) oder `structured` (`<Regal>/<Kiste>a.png`) |
+| `--browser` | Auto-Detect | Pfad zu Chrome / Edge / Chromium |
+| `--server` | Auto-Start | URL eines laufenden Servers oder automatischer interner Start |
+| `--overwrite` | `false` | Bereits existierende Snapshots überschreiben |
+| `--delay` | `0` | Optionale Pause in Millisekunden zwischen Renderings |
+
+Alternativ steht unter **`http://localhost:8080/snapshot`** ein interaktives Web-Interface mit Fortschrittsanzeige für manuelle Batch-Exporte direkt im Browser zur Verfügung.
 
 ---
 

@@ -113,6 +113,11 @@ func (h *Handlers) HandleEmbed(w http.ResponseWriter, r *http.Request) {
 	h.renderTemplate(w, r, "embed.gohtml", true)
 }
 
+// HandleSnapshot renders the isolated shelf box snapshot rendering engine page.
+func (h *Handlers) HandleSnapshot(w http.ResponseWriter, r *http.Request) {
+	h.renderTemplate(w, r, "snapshot.gohtml", false)
+}
+
 // HandleSplines renders the 2D spline and control point visualization page.
 func (h *Handlers) HandleSplines(w http.ResponseWriter, r *http.Request) {
 	h.renderTemplate(w, r, "splines.gohtml", false)

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{.Title}} - Kisten Snapshots</title>
+    <link rel="stylesheet" href="{{.BaseURL}}static/scss/mediathek3d.css">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #283744;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #renderer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Snapshot Batch HUD */
+        .snapshot-hud {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            background: rgba(20, 28, 36, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: #f4f5f7;
+            max-width: 420px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .snapshot-hud.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+        }
+
+        .snapshot-hud h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .snapshot-hud p {
+            margin: 0 0 14px 0;
+            font-size: 0.85rem;
+            color: #9ba3af;
+            line-height: 1.4;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b949e;
+        }
+
+        .form-group select, .form-group input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 6px;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .btn-action:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f4f5f7;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .progress-box {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #10b981;
+            transition: width 0.1s ease;
+        }
+
+        .progress-label {
+            font-size: 0.75rem;
+            color: #9ba3af;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-toggle-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 101;
+            background: rgba(20, 28, 36, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="snapshot-mode">
+    <div id="renderer-container"></div>
+
+    <button id="btn-toggle-hud" class="hud-toggle-btn" title="HUD ein-/ausblenden">HUD umschalten</button>
+
+    <div id="snapshot-hud" class="snapshot-hud">
+        <h2>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            Kisten Snapshots
+        </h2>
+        <p>Erzeugt hochauflösende Screenshots für jede einzelne Kiste (Seite A & Seite B) mit isoliertem Regalaufbau.</p>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="select-shelf">Regal</label>
+                <select id="select-shelf">
+                    <option value="ALL">Alle Regale (A–T, Y)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="select-side">Seiten</label>
+                <select id="select-side">
+                    <option value="both">Beide Seiten (A & B)</option>
+                    <option value="a">Nur Seite A</option>
+                    <option value="b">Nur Seite B</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="select-theme">Farb-Theme</label>
+                <select id="select-theme">
+                    <option value="olive">🫒 Olivenhain</option>
+                    <option value="ocher">🎨 Ocker Lounge</option>
+                    <option value="sage">🌿 Salbei & Natur</option>
+                    <option value="terracotta">🏺 Warm Terrakotta</option>
+                    <option value="classic">🔷 Klassisch (Rot/Blau)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="btn-start-batch" class="btn-action">Batch-Export starten</button>
+            <button id="btn-stop-batch" class="btn-action btn-secondary" disabled>Stopp</button>
+        </div>
+
+        <div id="progress-container" class="progress-box" style="display: none;">
+            <div class="progress-label">
+                <span id="progress-status">Vorbereitung...</span>
+                <span id="progress-counts">0 / 0</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js ES Modules & Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "{{.BaseURL}}static/js/three/three.module.js",
+            "three/addons/": "{{.BaseURL}}static/js/three/addons/",
+            "mediathek-core": "{{.BaseURL}}static/js/mediathek-core.js",
+            "mediathek-3d": "{{.BaseURL}}static/js/mediathek-3d.js",
+            "theme-manager": "{{.BaseURL}}static/js/modules/theme-manager.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Mediathek } from 'mediathek-core';
+        import { Mediathek3D } from 'mediathek-3d';
+        import { ThemeManager, DEFAULT_THEME } from 'theme-manager';
+
+        function hexToRgba(hexNum, alpha = 0.85) {
+            if (typeof hexNum !== 'number') {
+                return `rgba(139, 163, 54, ${alpha})`;
+            }
+            const r = (hexNum >> 16) & 255;
+            const g = (hexNum >> 8) & 255;
+            const b = hexNum & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function createTitleCanvas(sourceCanvas, topText, bottomText, highlightColor) {
+            const w = sourceCanvas.width;
+            const h = sourceCanvas.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            // 1. Draw base 3D snapshot
+            ctx.drawImage(sourceCanvas, 0, 0, w, h);
+
+            // Bar dimensions (doubled thickness: ~15% of image height, e.g. 162px for 1080x1080)
+            const barHeight = Math.max(56, Math.round(h * 0.15));
+            const barColor = hexToRgba(highlightColor, 0.85);
+
+            // 2. Top bar (semi-transparent in box highlight color)
+            ctx.fillStyle = barColor;
+            ctx.fillRect(0, 0, w, barHeight);
+
+            // Top text (left-aligned, larger font and closer to banner edge)
+            const topFontSize = Math.round(barHeight * 0.65);
+            ctx.font = `bold ${topFontSize}px 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            const leftPadding = Math.round(w * 0.022);
+            ctx.fillText(topText, leftPadding, barHeight / 2);
+
+            // 3. Bottom bar (semi-transparent)
+            ctx.fillStyle = barColor;
+            ctx.fillRect(0, h - barHeight, w, barHeight);
+
+            // Bottom text (centered, "Mediathek HGK", larger font)
+            const bottomFontSize = Math.round(barHeight * 0.55);
+            ctx.font = `bold ${bottomFontSize}px 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(bottomText, w / 2, h - (barHeight / 2));
+
+            return canvas;
+        }
+
+        function resizeCanvas(sourceCanvas, targetWidth = 230, targetHeight = 230) {
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+            return canvas;
+        }
+
+        class SnapshotEngine {
+            constructor() {
+                this.baseUrl = '{{.BaseURL}}';
+                this.container = document.querySelector('#renderer-container');
+                this.mediathek = null;
+                this.mediathek3D = null;
+                this.themeManager = null;
+                this.allBoxes = [];
+                this.shelvesData = null;
+                this.positionsData = null;
+                this.shelfKeys = [];
+                this.isReady = false;
+                this.currentShelfKey = null;
+                this.isRunningBatch = false;
+
+                this._initEngine();
+            }
+
+            async _initEngine() {
+                // Initialize URL parameters & Theme
+                const urlParams = new URLSearchParams(window.location.search);
+                const themeParam = urlParams.get('theme') || 'olive';
+                this.themeManager = new ThemeManager({
+                    initialTheme: themeParam
+                });
+                const currentTheme = this.themeManager.getCurrentTheme();
+                this.themeManager.applyThemeCSS(currentTheme);
+
+                // Initialize Core Three.js Renderer
+                this.mediathek = new Mediathek({
+                    renderDOM: this.container,
+                    backgroundColor: currentTheme.backgroundColor,
+                    clearAlpha: 1.0,
+                    antialias: true,
+                    shadows: false,
+                    doWindowResize: true
+                });
+
+                // Load Metadata
+                try {
+                    const [boxesRes, summaryRes, posRes] = await Promise.all([
+                        fetch(this.baseUrl + 'api/boxes'),
+                        fetch(this.baseUrl + 'api/boxes/summary'),
+                        fetch(this.baseUrl + 'static/data/kistenpositions.json').catch(() => null)
+                    ]);
+
+                    this.shelvesData = await boxesRes.json();
+                    const summary = await summaryRes.json();
+                    this.shelfKeys = summary.shelfKeys || Object.keys(this.shelvesData).sort();
+                    if (posRes && posRes.ok) {
+                        this.positionsData = await posRes.json();
+                    }
+
+                    // Populate UI Shelf select
+                    const select = document.getElementById('select-shelf');
+                    this.shelfKeys.forEach(k => {
+                        const opt = document.createElement('option');
+                        opt.value = k;
+                        opt.textContent = `Regal ${k}`;
+                        select.appendChild(opt);
+                    });
+
+                    // Set Theme Select value
+                    const selectTheme = document.getElementById('select-theme');
+                    if (selectTheme) {
+                        selectTheme.value = this.themeManager.currentThemeId;
+                    }
+
+                    // Check URL parameter e.g. ?shelf=A
+                    if (urlParams.has('shelf')) {
+                        const initialShelf = urlParams.get('shelf').toUpperCase();
+                        if (this.shelfKeys.includes(initialShelf)) {
+                            select.value = initialShelf;
+                            await this.loadShelf(initialShelf);
+                        } else {
+                            await this.loadShelf(this.shelfKeys[0]);
+                        }
+                    } else {
+                        await this.loadShelf(this.shelfKeys[0]);
+                    }
+
+                    if (urlParams.has('hud') && urlParams.get('hud') === 'false') {
+                        document.getElementById('snapshot-hud').classList.add('hidden');
+                    }
+
+                    this.isReady = true;
+                    this._bindUI();
+                } catch (e) {
+                    console.error('SnapshotEngine initialization error:', e);
+                }
+            }
+
+            setTheme(themeId) {
+                if (!this.themeManager) return null;
+                const theme = this.themeManager.setTheme(themeId, false);
+                if (this.mediathek && typeof this.mediathek.setBackgroundColor === 'function') {
+                    this.mediathek.setBackgroundColor(theme.backgroundColor);
+                }
+                if (this.mediathek3D) {
+                    this.mediathek3D.setTheme(theme);
+                }
+                const selectTheme = document.getElementById('select-theme');
+                if (selectTheme) {
+                    selectTheme.value = this.themeManager.currentThemeId;
+                }
+                if (this.mediathek) {
+                    this.mediathek.render();
+                }
+                return theme;
+            }
+
+            async loadShelf(shelfKey) {
+                if (this.mediathek3D) {
+                    this.mediathek.scene.remove(this.mediathek3D);
+                    this.mediathek3D = null;
+                }
+
+                this.currentShelfKey = shelfKey;
+                const currentTheme = this.themeManager ? this.themeManager.getCurrentTheme() : null;
+
+                return new Promise((resolve) => {
+                    this.mediathek3D = new Mediathek3D({
+                        floorImage: this.baseUrl + 'static/img/mt_background.png',
+                        boxData: this.shelvesData,
+                        positionsData: this.positionsData,
+                        drawOnly: [shelfKey],
+                        hideOtherBottoms: true,
+                        boxColor: currentTheme ? currentTheme.boxColor : undefined,
+                        bottomColor: currentTheme ? currentTheme.bottomColor : undefined,
+                        boxColorHighlight: currentTheme ? currentTheme.boxColorHighlight : undefined,
+                        boxDelay: 0
+                    }, (m3d) => {
+                        this.mediathek.scene.add(m3d);
+                        if (currentTheme) {
+                            m3d.setTheme(currentTheme);
+                        }
+                        this.mediathek.render();
+                        resolve({ shelf: shelfKey, ready: true });
+                    });
+                });
+            }
+
+            getBoxesForShelf(shelfKey) {
+                if (!this.shelvesData || !this.shelvesData[shelfKey]) return [];
+                const shelf = this.shelvesData[shelfKey];
+                const hasB = shelf.hasb !== false && shelf.hasB !== false && shelfKey !== 'T';
+                const boxes = [];
+
+                for (const lvlKey in shelf.level) {
+                    const lvl = parseInt(lvlKey, 10);
+                    const count = parseInt(shelf.level[lvlKey].boxes, 10) || 0;
+                    for (let i = 1; i <= count; i++) {
+                        const numStr = (i < 10 ? '0' : '') + i;
+                        const baseName = `${shelfKey}${lvl}${numStr}`;
+                        boxes.push({
+                            id: `${baseName}a`,
+                            id2: hasB ? `${baseName}b` : '',
+                            name: baseName,
+                            shelf: shelfKey,
+                            level: lvl,
+                            index: i,
+                            hasB: hasB,
+                            area: shelf.area || ''
+                        });
+                    }
+                }
+                return boxes;
+            }
+
+            async captureBox(boxId, side = 'a') {
+                if (!this.mediathek3D || !this.mediathek) {
+                    return { skipped: true, reason: 'engine_not_ready' };
+                }
+
+                const cleanId = boxId.toUpperCase();
+                const cleanSide = side.toLowerCase();
+
+                // Highlight target box
+                this.mediathek3D.boxHighlight(cleanId, true);
+
+                // Calculate explicit side transform
+                const focus = this.mediathek3D.getBoxSideFocusTransform(cleanId, cleanSide);
+                if (!focus) {
+                    this.mediathek3D.boxHighlight(cleanId, false);
+                    return { skipped: true, reason: 'side_not_applicable', boxId: cleanId, side: cleanSide };
+                }
+
+                // Instantly position camera and target
+                this.mediathek.camera.position.copy(focus.cameraPos);
+                if (this.mediathek.controls && this.mediathek.controls.target) {
+                    this.mediathek.controls.target.copy(focus.targetPos);
+                }
+                this.mediathek.camera.lookAt(focus.targetPos);
+                this.mediathek.camera.updateMatrixWorld();
+
+                // Render high quality frame
+                this.mediathek.render();
+
+                const domCanvas = this.mediathek.renderer.domElement;
+                const rawDataUrl = domCanvas.toDataURL('image/png');
+
+                const currentTheme = this.themeManager ? this.themeManager.getCurrentTheme() : null;
+                const highlightColor = (currentTheme && currentTheme.boxColorHighlight !== undefined) ? currentTheme.boxColorHighlight : 0x8ba336;
+
+                // 1. Title canvas (1080x1080)
+                const titleLabel = `${cleanId} ${cleanSide}`;
+                const titleCanvas = createTitleCanvas(domCanvas, titleLabel, 'Mediathek HGK', highlightColor);
+                const titleDataUrl = titleCanvas.toDataURL('image/png');
+
+                // 2. Raw small (230x230)
+                const rawSmallCanvas = resizeCanvas(domCanvas, 230, 230);
+                const rawSmallDataUrl = rawSmallCanvas.toDataURL('image/png');
+
+                // 3. Title small (230x230)
+                const titleSmallCanvas = resizeCanvas(titleCanvas, 230, 230);
+                const titleSmallDataUrl = titleSmallCanvas.toDataURL('image/png');
+
+                // 4. Extras (e.g. P301a with "Information")
+                const extras = [];
+                if (cleanId === 'P301' && cleanSide === 'a') {
+                    const infoCanvas = createTitleCanvas(domCanvas, 'Information', 'Mediathek HGK', highlightColor);
+                    const infoTitleDataUrl = infoCanvas.toDataURL('image/png');
+                    const infoTitleSmallCanvas = resizeCanvas(infoCanvas, 230, 230);
+                    const infoTitleSmallDataUrl = infoTitleSmallCanvas.toDataURL('image/png');
+
+                    extras.push({
+                        name: 'P301a_information.png',
+                        titleDataUrl: infoTitleDataUrl,
+                        titleSmallDataUrl: infoTitleSmallDataUrl
+                    });
+                    extras.push({
+                        name: 'Information.png',
+                        titleDataUrl: infoTitleDataUrl,
+                        titleSmallDataUrl: infoTitleSmallDataUrl
+                    });
+                }
+
+                // Unhighlight box
+                this.mediathek3D.boxHighlight(cleanId, false);
+
+                return {
+                    skipped: false,
+                    boxId: cleanId,
+                    side: cleanSide,
+                    dataUrl: rawDataUrl,
+                    rawDataUrl: rawDataUrl,
+                    titleDataUrl: titleDataUrl,
+                    rawSmallDataUrl: rawSmallDataUrl,
+                    titleSmallDataUrl: titleSmallDataUrl,
+                    extras: extras
+                };
+            }
+
+            _bindUI() {
+                const btnToggle = document.getElementById('btn-toggle-hud');
+                const hud = document.getElementById('snapshot-hud');
+                const btnStart = document.getElementById('btn-start-batch');
+                const btnStop = document.getElementById('btn-stop-batch');
+                const selectShelf = document.getElementById('select-shelf');
+
+                btnToggle.addEventListener('click', () => {
+                    hud.classList.toggle('hidden');
+                });
+
+                const selectTheme = document.getElementById('select-theme');
+                if (selectTheme) {
+                    selectTheme.addEventListener('change', (e) => {
+                        this.setTheme(e.target.value);
+                    });
+                }
+
+                selectShelf.addEventListener('change', async (e) => {
+                    if (e.target.value !== 'ALL') {
+                        await this.loadShelf(e.target.value);
+                    }
+                });
+
+                btnStart.addEventListener('click', () => this.startInBrowserBatch());
+                btnStop.addEventListener('click', () => {
+                    this.isRunningBatch = false;
+                });
+            }
+
+            async startInBrowserBatch() {
+                const selectShelf = document.getElementById('select-shelf');
+                const selectSide = document.getElementById('select-side');
+                const progContainer = document.getElementById('progress-container');
+                const progStatus = document.getElementById('progress-status');
+                const progCounts = document.getElementById('progress-counts');
+                const progFill = document.getElementById('progress-bar-fill');
+                const btnStart = document.getElementById('btn-start-batch');
+                const btnStop = document.getElementById('btn-stop-batch');
+
+                const targetShelf = selectShelf.value;
+                const sideMode = selectSide.value; // 'both', 'a', 'b'
+
+                const targetShelves = targetShelf === 'ALL' ? this.shelfKeys : [targetShelf];
+
+                // Calculate total snapshots
+                let tasks = [];
+                for (const sKey of targetShelves) {
+                    const boxes = this.getBoxesForShelf(sKey);
+                    for (const b of boxes) {
+                        if (sideMode === 'both' || sideMode === 'a') {
+                            tasks.push({ shelf: sKey, box: b.name, side: 'a', filename: `${b.name}a.png` });
+                        }
+                        if ((sideMode === 'both' || sideMode === 'b') && b.hasB) {
+                            tasks.push({ shelf: sKey, box: b.name, side: 'b', filename: `${b.name}b.png` });
+                        }
+                    }
+                }
+
+                if (tasks.length === 0) return;
+
+                this.isRunningBatch = true;
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                progContainer.style.display = 'block';
+
+                let completed = 0;
+                let currentLoadedShelf = null;
+
+                for (let i = 0; i < tasks.length; i++) {
+                    if (!this.isRunningBatch) break;
+
+                    const task = tasks[i];
+                    progStatus.textContent = `Regal ${task.shelf} - ${task.box} (Seite ${task.side.toUpperCase()})`;
+                    progCounts.textContent = `${completed + 1} / ${tasks.length}`;
+                    progFill.style.width = `${Math.round(((completed) / tasks.length) * 100)}%`;
+
+                    if (currentLoadedShelf !== task.shelf) {
+                        await this.loadShelf(task.shelf);
+                        currentLoadedShelf = task.shelf;
+                        await new Promise(r => setTimeout(r, 60));
+                    }
+
+                    const res = await this.captureBox(task.box, task.side);
+                    if (!res.skipped && res.dataUrl) {
+                        // Download trigger
+                        const link = document.createElement('a');
+                        link.download = task.filename;
+                        link.href = res.dataUrl;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+
+                    completed++;
+                    await new Promise(r => setTimeout(r, 80));
+                }
+
+                progFill.style.width = '100%';
+                progStatus.textContent = this.isRunningBatch ? 'Batch-Export abgeschlossen!' : 'Export abgebrochen.';
+                progCounts.textContent = `${completed} / ${tasks.length}`;
+
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+                this.isRunningBatch = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.snapshotEngine = new SnapshotEngine();
+            // Global API for Headless CDP Automation
+            window.snapshotAPI = {
+                isReady: () => window.snapshotEngine && window.snapshotEngine.isReady,
+                getShelfKeys: () => window.snapshotEngine.shelfKeys,
+                getBoxes: (shelf) => window.snapshotEngine.getBoxesForShelf(shelf),
+                initShelf: (shelf) => window.snapshotEngine.loadShelf(shelf),
+                captureBox: (boxId, side) => window.snapshotEngine.captureBox(boxId, side),
+                setTheme: (theme) => window.snapshotEngine.setTheme(theme),
+                getTheme: () => window.snapshotEngine && window.snapshotEngine.themeManager ? window.snapshotEngine.themeManager.currentThemeId : 'olive'
+            };
+        });
+    </script>
+</body>
+</html>

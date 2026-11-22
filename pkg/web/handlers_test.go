@@ -117,6 +117,33 @@ func TestEmbedPage(t *testing.T) {
 	}
 }
 
+func TestSnapshotPage(t *testing.T) {
+	srv, _ := setupTestServer(t)
+	handler := srv.Handler()
+
+	req := httptest.NewRequest("GET", "/snapshot?shelf=A", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	bodyStr := string(body)
+
+	if !strings.Contains(bodyStr, "snapshot-mode") {
+		t.Errorf("Expected snapshot-mode class on body")
+	}
+	if !strings.Contains(bodyStr, "snapshotAPI") {
+		t.Errorf("Expected snapshotAPI definition in snapshot template")
+	}
+	if !strings.Contains(bodyStr, "renderer-container") {
+		t.Errorf("Expected renderer-container DOM element in snapshot template")
+	}
+}
+
 func TestSplinesPage(t *testing.T) {
 	srv, _ := setupTestServer(t)
 	handler := srv.Handler()

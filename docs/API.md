@@ -22,6 +22,15 @@ Hides header branding and technical panels while maintaining full 3D navigation,
 
 ---
 
+### `GET /snapshot`
+Renders the isolated shelf 3D WebGL snapshot viewport used for headless batch snapshot automation and in-browser snapshot export.
+
+#### Supported Query Parameters:
+- `shelf` (*string*, optional): Initial shelf letter to isolate (e.g. `?shelf=A`).
+- `hud` (*string*, optional): Set to `false` to hide all UI overlays for clean headless screen capture (e.g. `?hud=false`).
+
+---
+
 ### `GET /splines` or `GET /2d` or `GET /plan`
 Renders the interactive 2D floor plan visualization displaying the background image (`mt_background.png`), all control points from `kistendata.json`, and their corresponding Catmull-Rom splines.
 

@@ -71,6 +71,7 @@ export class Mediathek3D extends THREE.Object3D {
         this.boxData = config.boxData || 'api/boxes';
         this.positionsData = config.positionsData !== undefined ? config.positionsData : 'static/data/kistenpositions.json';
         this.drawOnly = config.drawOnly ? (Array.isArray(config.drawOnly) ? config.drawOnly : [config.drawOnly]) : null;
+        this.hideOtherBottoms = config.hideOtherBottoms !== undefined ? Boolean(config.hideOtherBottoms) : false;
         this.boxDelay = config.boxDelay !== undefined ? config.boxDelay : 0;
 
         // Data containers
@@ -360,7 +361,7 @@ export class Mediathek3D extends THREE.Object3D {
                 }
                 if (match) {
                     box = this.createBox(boxname1, boxname2);
-                } else if (levelNum === 1) {
+                } else if (levelNum === 1 && !this.hideOtherBottoms) {
                     box = this.createBottom(boxname1, boxname2);
                 } else {
                     continue;
@@ -473,7 +474,7 @@ export class Mediathek3D extends THREE.Object3D {
                 }
                 if (match) {
                     box = this.createBox(boxname1, boxname2);
-                } else if (levelNum === 1) {
+                } else if (levelNum === 1 && !this.hideOtherBottoms) {
                     box = this.createBottom(boxname1, boxname2);
                 } else {
                     continue;
@@ -761,13 +762,23 @@ export class Mediathek3D extends THREE.Object3D {
 
         // --- Step 2: Determine camera viewing side ---
         let sideNormal;
-        if (isSingleSided) {
+        if (typeof currentCamPos === 'string') {
+            const requestedSide = currentCamPos.toLowerCase().trim();
+            if (requestedSide === 'b' || requestedSide === 'side_b' || requestedSide === '2' || requestedSide === 'back') {
+                if (isSingleSided) {
+                    return null; // Shelf/box has no Side B (e.g. shelf T)
+                }
+                sideNormal = frontNormal.clone().negate();
+            } else {
+                sideNormal = frontNormal.clone();
+            }
+        } else if (isSingleSided) {
             // Box has only one side (Side A): clicks from the back side always position camera to the front side
             sideNormal = frontNormal;
         } else {
             // Dual-sided box: preserve current camera viewing side
             sideNormal = normal.clone();
-            if (currentCamPos) {
+            if (currentCamPos && typeof currentCamPos.clone === 'function') {
                 const toCam = currentCamPos.clone().sub(boxCenter);
                 toCam.z = 0;
                 if (toCam.dot(normal) < 0) {
@@ -902,6 +913,19 @@ export class Mediathek3D extends THREE.Object3D {
             cameraPos,
             targetPos: boxCenter
         };
+    }
+
+    /**
+     * Helper method to calculate camera focus transform specifically for Side A ('a') or Side B ('b').
+     *
+     * @param {string} boxId - Box identifier (e.g. "A101").
+     * @param {string} [side='a'] - Target opening side ('a' for front, 'b' for back).
+     * @param {number} [preferredDistance=1150] - Camera distance.
+     * @param {number} [baseElevation=480] - Camera height offset.
+     * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null}
+     */
+    getBoxSideFocusTransform(boxId, side = 'a', preferredDistance = 1150, baseElevation = 480) {
+        return this.getBoxFocusTransform(boxId, side, preferredDistance, baseElevation);
     }
 }
 
