@@ -685,10 +685,10 @@ export class Mediathek3D extends THREE.Object3D {
      *    - Obtains the box world rotation quaternion and rotates unit vector `(1, 0, 0)` to find the
      *      opening normal vector perpendicular to the shelf's spline path.
      *
-     * 2. Viewing-Side Preservation (Anti-Flip Guarantee):
-     *    - Calculates vector `toCam = currentCamPos - boxCenter` in the XY ground plane.
-     *    - If `toCam · normal < 0`, the camera is currently looking from the opposite side; `sideNormal` is inverted.
-     *    - Guarantees the camera never crosses through the shelf spine to the opposite side.
+     * 2. Viewing-Side Preservation & Single-Sided Enforcement:
+     *    - For single-sided boxes (e.g. `hasb: false`): always positions the camera facing the front opening
+     *      (Side A / `aside`), redirecting clicks on the back side directly to the front view.
+     *    - For dual-sided boxes: preserves viewing-side if `toCam · normal < 0` (anti-flip guarantee).
      *
      * 3. Corridor Scanning against Visible Scene Geometry:
      *    - Iterates over all actively rendered, visible boxes (`box.parent && box.visible !== false`).
@@ -699,7 +699,8 @@ export class Mediathek3D extends THREE.Object3D {
      *    - Tracks `minObstacleDist` (aisle width) and `obstacleMaxTopZ` (highest obstructing shelf point).
      *
      * 4. Distance & Elevation Optimization:
-     *    - In wide/open spaces (`minObstacleDist == Infinity`): uses `preferredDistance` (default 1150) and `baseElevation` (320).
+     *    - In wide/unobstructed corridors (`minObstacleDist == Infinity` or wide): uses `preferredDistance`
+     *      (1150) and elevated `baseElevation` (480) for an optimal downward perspective onto box numbers.
      *    - In narrow aisles:
      *      a) Calculates safe aisle distance: `minObstacleDist - boxDepth / 2 - 80`.
      *      b) Computes aisle tightness factor `[0..1]` and scales camera elevation upward.
@@ -715,10 +716,10 @@ export class Mediathek3D extends THREE.Object3D {
      * @param {string} boxId - Box identifier (e.g. "S105").
      * @param {THREE.Vector3} [currentCamPos=null] - Current camera position in world coordinates.
      * @param {number} [preferredDistance=1150] - Desired camera distance along shelf opening normal in open space.
-     * @param {number} [baseElevation=320] - Base height offset above box center in open space.
+     * @param {number} [baseElevation=480] - Base height offset above box center in open space (for clear label reading).
      * @returns {{cameraPos: THREE.Vector3, targetPos: THREE.Vector3}|null} Computed camera transform or null.
      */
-    getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1150, baseElevation = 320) {
+    getBoxFocusTransform(boxId, currentCamPos = null, preferredDistance = 1150, baseElevation = 480) {
         if (!boxId || !this.boxes) return null;
         const key = boxId.toUpperCase();
         const box = this.boxes[key] || this.boxes[boxId];
@@ -745,20 +746,35 @@ export class Mediathek3D extends THREE.Object3D {
             normal.set(0, -1, 0);
         }
 
-        // --- Step 2: Determine and preserve camera viewing side ---
-        let sideNormal = normal.clone();
-        if (currentCamPos) {
-            const toCam = currentCamPos.clone().sub(boxCenter);
-            toCam.z = 0;
-            if (toCam.dot(normal) < 0) {
-                sideNormal.negate();
-            }
-        }
-
         const selectedMeta = box.userData || {};
         const selectedShelf = selectedMeta.shelf || key.charAt(0);
         const selectedIndex = selectedMeta.index || 1;
         const selectedLevel = selectedMeta.level || 1;
+
+        // Determine if this box/shelf is single-sided (no side B)
+        const isSingleSided = selectedMeta.hasb === false ||
+            (this.theData && this.theData[selectedShelf] && this.theData[selectedShelf].hasb === false) ||
+            (!selectedMeta.id2 && selectedMeta.id2 !== undefined && selectedShelf === 'T');
+
+        const aside = selectedMeta.aside || (this.theData && this.theData[selectedShelf] && this.theData[selectedShelf].aside) || 'right';
+        const frontNormal = (aside === 'left') ? normal.clone().negate() : normal.clone();
+
+        // --- Step 2: Determine camera viewing side ---
+        let sideNormal;
+        if (isSingleSided) {
+            // Box has only one side (Side A): clicks from the back side always position camera to the front side
+            sideNormal = frontNormal;
+        } else {
+            // Dual-sided box: preserve current camera viewing side
+            sideNormal = normal.clone();
+            if (currentCamPos) {
+                const toCam = currentCamPos.clone().sub(boxCenter);
+                toCam.z = 0;
+                if (toCam.dot(normal) < 0) {
+                    sideNormal.negate();
+                }
+            }
+        }
 
         // --- Step 3: Scan active corridor for obstacles in viewing path ---
         const perpVector = new THREE.Vector2(-sideNormal.y, sideNormal.x);
@@ -813,7 +829,7 @@ export class Mediathek3D extends THREE.Object3D {
 
         // --- Step 4: Calculate camera distance and elevation based on corridor clearance ---
         const prefDist = typeof preferredDistance === 'number' ? preferredDistance : 1150;
-        const baseElev = typeof baseElevation === 'number' ? baseElevation : 320;
+        const baseElev = typeof baseElevation === 'number' ? baseElevation : 480;
         const minDistance = 550;
 
         let chosenDist = prefDist;
@@ -832,7 +848,7 @@ export class Mediathek3D extends THREE.Object3D {
 
             const safeAisleDist = Math.max(minDistance, minObstacleDist - boxDepth / 2 - 80);
             const tightness = Math.max(0, Math.min(1, (1300 - minObstacleDist) / (1300 - 450)));
-            const tightElevation = baseElev + tightness * 300;
+            const tightElevation = baseElev + tightness * 260;
 
             // Calculate elevation required to look over the opposite shelf via similar triangles
             const requiredLOSHeight = obstacleMaxTopZ + 35;
