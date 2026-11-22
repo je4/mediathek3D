@@ -5,12 +5,19 @@
   "type": "module",
   "description": "HGK Mediathek 3D Web Viewer",
   "scripts": {
+    "build:tailwind": "tailwindcss -i pkg/web/static/css/tailwind-input.css -o pkg/web/static/css/tailwind.min.css --minify",
     "build:sass": "sass pkg/web/static/scss/mediathek3d.scss:pkg/web/static/scss/mediathek3d.css",
+    "watch:tailwind": "tailwindcss -i pkg/web/static/css/tailwind-input.css -o pkg/web/static/css/tailwind.min.css --watch",
     "watch:sass": "sass --watch pkg/web/static/scss/mediathek3d.scss:pkg/web/static/scss/mediathek3d.css",
+    "build": "npm run build:tailwind && npm run build:sass",
     "precompute": "node scripts/precompute-positions.mjs"
   },
   "devDependencies": {
-    "sass": "^1.108.2"
+    "@tailwindcss/cli": "^4.3.3",
+    "mri": "^1.2.0",
+    "picocolors": "^1.1.1",
+    "sass": "^1.108.2",
+    "tailwindcss": "^4.3.3"
   },
   "dependencies": {
     "three": "^0.187.0"

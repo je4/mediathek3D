@@ -1,64 +1,73 @@
 {{define "help_modal"}}
 <!-- Help & Keyboard Shortcuts Modal Dialog -->
-<div id="help-modal" class="d-none">
-    <div class="modal-card glass-panel">
-        <div class="modal-header">
-            <h2 class="modal-title">3D Viewer Navigation & Shortcuts</h2>
-            <button id="help-close-btn" class="drawer-close" aria-label="Close Help">×</button>
+<dialog id="help-modal" class="modal">
+    <div class="modal-card modal-box max-w-lg bg-base-100/95 backdrop-blur-md border border-base-content/15 shadow-2xl">
+        <form method="dialog">
+            <button id="help-close-btn" class="drawer-close btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="Close Help">✕</button>
+        </form>
+        <div class="modal-header mb-3 pb-2 border-b border-base-content/10">
+            <h2 class="modal-title font-bold text-lg text-base-content flex items-center gap-2">
+                <span>⌨️</span> 3D-Navigation & Tastaturkürzel
+            </h2>
         </div>
 
-        <table class="shortcuts-table">
-            <tbody>
-                <tr>
-                    <td><strong>Orbit / Rotate</strong></td>
-                    <td>Left Click + Drag</td>
-                </tr>
-                <tr>
-                    <td><strong>Pan / Move</strong></td>
-                    <td>Right Click + Drag (or Two-Finger Drag)</td>
-                </tr>
-                <tr>
-                    <td><strong>Zoom</strong></td>
-                    <td>Mouse Scroll Wheel (or Pinch Gesture)</td>
-                </tr>
-                <tr>
-                    <td><strong>Select Box</strong></td>
-                    <td>Click on any shelf box to highlight & focus</td>
-                </tr>
-                <tr>
-                    <td><strong>Reset View</strong></td>
-                    <td><span class="kbd-badge">R</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Top 2D View</strong></td>
-                    <td><span class="kbd-badge">T</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Toggle Fullscreen</strong></td>
-                    <td><span class="kbd-badge">F</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Cycle Color Theme</strong></td>
-                    <td><span class="kbd-badge">C</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Focus Search</strong></td>
-                    <td><span class="kbd-badge">/</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Help / Shortcuts</strong></td>
-                    <td><span class="kbd-badge">H</span> / <span class="kbd-badge">?</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Close Panels</strong></td>
-                    <td><span class="kbd-badge">Esc</span></td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto mb-4">
+            <table class="shortcuts-table table table-sm table-zebra w-full text-xs">
+                <tbody>
+                    <tr>
+                        <td class="font-semibold text-base-content">Rotieren / Orbit</td>
+                        <td class="text-base-content/80">Linksklick + Ziehen</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Verschieben / Pan</td>
+                        <td class="text-base-content/80">Rechtsklick + Ziehen (oder 2-Finger-Geste)</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Zoomen</td>
+                        <td class="text-base-content/80">Mausrad drehen (oder Pinch-to-Zoom)</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Kiste auswählen</td>
+                        <td class="text-base-content/80">Klick auf Kiste zum Fokussieren & Hervorheben</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Ansicht zurücksetzen</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">R</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">2D-Draufsicht</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">T</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Vollbild umschalten</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">F</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Farbschema wechseln</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">C</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Suche fokussieren</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">/</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Hilfe / Kürzel</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">H</kbd> / <kbd class="kbd-badge kbd kbd-sm">?</kbd></td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold text-base-content">Dialoge schliessen</td>
+                        <td><kbd class="kbd-badge kbd kbd-sm">Esc</kbd></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
-            <p><strong>Direct Links:</strong> You can link to any box by URL hash (e.g. <code>#A101</code>) or query parameter (e.g. <code>?box=A101</code>).</p>
+        <div class="text-xs text-base-content/70 leading-relaxed bg-base-200/50 p-2.5 rounded-box border border-base-content/10">
+            <p><strong>Direktlinks:</strong> Jede Kiste kann per URL-Hash (z.B. <code class="badge badge-sm badge-ghost font-mono">#A101</code>) oder Parameter (z.B. <code class="badge badge-sm badge-ghost font-mono">?box=A101</code>) direkt adressiert werden.</p>
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop">
+        <button>schliessen</button>
+    </form>
+</dialog>
 {{end}}

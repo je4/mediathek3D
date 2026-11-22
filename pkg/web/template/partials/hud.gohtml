@@ -1,112 +1,122 @@
 {{define "hud"}}
 <!-- Heads-Up Display (HUD) Navigation and Control Elements -->
-<div class="top-hud">
+<div class="top-hud navbar p-0 gap-3 pointer-events-none absolute top-3 left-3 right-3 z-10 flex flex-wrap justify-between items-center w-auto max-w-[calc(100vw-1.5rem)] min-h-0">
     <!-- Brand Info -->
-    <div class="brand-section glass-panel">
-        <span class="brand-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="brand-section navbar-start flex items-center gap-2 p-1.5 px-3 rounded-box bg-base-100/85 backdrop-blur-md border border-base-content/15 shadow-md pointer-events-auto w-auto shrink-0">
+        <span class="brand-title font-bold flex items-center gap-2 text-base-content text-sm sm:text-base">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                 <polyline points="2 17 12 22 22 17"></polyline>
                 <polyline points="2 12 12 17 22 12"></polyline>
             </svg>
             {{.Title}}
         </span>
-        <span class="brand-badge">3D Viewer</span>
+        <span class="brand-badge badge badge-sm badge-neutral font-semibold">3D Viewer</span>
     </div>
 
     <!-- Live Box Search Bar -->
-    <div id="search-container" class="glass-panel">
-        <form id="search-form" autocomplete="off" onsubmit="return false;">
-            <div class="search-input-wrapper">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="search-input" placeholder="Search box or shelf (e.g. A101)..." aria-label="Search box">
-            </div>
+    <div id="search-container" class="navbar-center relative pointer-events-auto w-72 sm:w-80 shrink-0">
+        <form id="search-form" autocomplete="off" onsubmit="return false;" class="w-full">
+            <label class="search-input-wrapper input input-sm input-bordered flex items-center gap-2 bg-base-100/85 backdrop-blur-md shadow-md rounded-box w-full">
+                <span class="search-icon opacity-60">🔍</span>
+                <input type="text" id="search-input" class="grow bg-transparent border-none outline-none text-base-content" placeholder="Kiste oder Regal suchen (z.B. A101)..." aria-label="Search box">
+            </label>
         </form>
-        <div id="search-results" class="glass-panel d-none"></div>
+        <div id="search-results" class="d-none absolute top-full left-0 right-0 mt-2 p-1 max-h-72 overflow-y-auto z-50 rounded-box bg-base-100/95 backdrop-blur-md border border-base-content/15 shadow-xl"></div>
     </div>
 
     <!-- View Controls & Action Buttons -->
-    <div class="controls-hud glass-panel">
+    <div class="controls-hud navbar-end flex items-center gap-1.5 p-1.5 px-2 rounded-box bg-base-100/85 backdrop-blur-md border border-base-content/15 shadow-md pointer-events-auto w-auto shrink-0 max-w-full">
         <!-- Shelf Filter Dropdown -->
-        <select id="shelf-filter-select" class="select-hud" aria-label="Filter Shelves">
-            <option value="">All Shelves</option>
+        <select id="shelf-filter-select" class="select-hud select select-sm select-bordered max-w-[130px] sm:max-w-[160px]" aria-label="Filter Shelves">
+            <option value="">Alle Regale</option>
         </select>
 
         <!-- Theme Selector Dropdown -->
-        <select id="theme-select" class="select-hud" aria-label="Color Theme" title="Farbschema wählen (Shortcut: C)">
+        <select id="theme-select" class="select-hud select select-sm select-bordered max-w-[130px] sm:max-w-[170px]" aria-label="Color Theme" title="Farbschema wählen (Shortcut: C)">
+            <option value="mediathek-dark">🏛️ Mediathek Dunkel</option>
+            <option value="mediathek-light">🏛️ Mediathek Hell</option>
+            <option value="unibas-light">🌿 Uni Basel Hell</option>
+            <option value="unibas-dark">🌿 Uni Basel Dunkel</option>
+            <option value="fhnw-light">🟡 FHNW Hell</option>
+            <option value="fhnw-dark">🟡 FHNW Dunkel</option>
             <option value="ocher">🎨 Ocker Lounge</option>
-            <option value="sage">🌿 Salbei & Natur</option>
+            <option value="sage">🌱 Salbei & Natur</option>
             <option value="olive">🫒 Olivenhain</option>
             <option value="terracotta">🏺 Warm Terrakotta</option>
             <option value="classic">🔷 Klassisch (Rot/Blau)</option>
         </select>
 
-        <button id="btn-reset-view" class="btn-hud" title="Reset View (R)">
-            <span>⟲</span> Reset
+        <button id="btn-reset-view" class="btn-hud btn btn-sm btn-ghost gap-1" title="Ansicht zurücksetzen (R)">
+            <span>⟲</span> <span class="hidden lg:inline">Reset</span>
         </button>
-        <button id="btn-top-view" class="btn-hud" title="Top-down 2D Overview (T)">
-            <span>⬚</span> Top View
+        <button id="btn-top-view" class="btn-hud btn btn-sm btn-ghost gap-1" title="2D Draufsicht (T)">
+            <span>⬚</span> <span class="hidden lg:inline">2D</span>
         </button>
-        <button id="btn-screenshot" class="btn-hud" title="Capture High-Res PNG Screenshot">
-            <span>📷</span> Snapshot
+        <button id="btn-screenshot" class="btn-hud btn btn-sm btn-ghost gap-1" title="Screenshot erfassen">
+            <span>📷</span>
         </button>
-        <button id="btn-fullscreen" class="btn-hud" title="Toggle Fullscreen (F)">
-            <span>⛶</span> Fullscreen
+        <button id="btn-fullscreen" class="btn-hud btn btn-sm btn-ghost gap-1" title="Vollbild umschalten (F)">
+            <span>⛶</span>
         </button>
-        <button id="btn-help" class="btn-hud btn-accent" title="Help & Navigation Shortcuts (H / ?)">
-            <span>?</span> Help
+        <button id="btn-help" class="btn-hud btn btn-sm btn-primary gap-1 font-semibold" title="Hilfe & Tastaturkürzel (H / ?)">
+            <span>?</span> <span class="hidden lg:inline">Hilfe</span>
         </button>
     </div>
 </div>
 
 <!-- Floating Box Details Drawer -->
-<div id="box-info-drawer" class="glass-panel d-none">
-    <div class="drawer-header">
-        <h3 id="box-info-title" class="drawer-title">Box Info</h3>
-        <button id="box-info-close" class="drawer-close" aria-label="Close Info">×</button>
-    </div>
-    <div class="info-grid">
-        <div class="info-item">
-            <span class="info-label">Shelf</span>
-            <span id="box-info-shelf" class="info-value">-</span>
+<div id="box-info-drawer" class="card bg-base-100/90 backdrop-blur-md border border-base-content/15 shadow-xl w-72 sm:w-80 absolute bottom-6 right-6 z-20 d-none">
+    <div class="card-body p-4">
+        <div class="drawer-header flex justify-between items-center mb-2 pb-2 border-b border-base-content/10">
+            <h3 id="box-info-title" class="drawer-title card-title text-base font-bold text-primary">Box Info</h3>
+            <button id="box-info-close" class="drawer-close btn btn-sm btn-ghost btn-circle" aria-label="Close Info">✕</button>
         </div>
-        <div class="info-item">
-            <span class="info-label">Level</span>
-            <span id="box-info-level" class="info-value">-</span>
+        <div class="info-grid grid grid-cols-2 gap-2 text-xs mb-2">
+            <div class="info-item flex flex-col">
+                <span class="info-label text-xs uppercase text-base-content/60 font-medium">Shelf</span>
+                <span id="box-info-shelf" class="info-value font-bold text-base-content">-</span>
+            </div>
+            <div class="info-item flex flex-col">
+                <span class="info-label text-xs uppercase text-base-content/60 font-medium">Level</span>
+                <span id="box-info-level" class="info-value font-bold text-base-content">-</span>
+            </div>
+            <div class="info-item flex flex-col">
+                <span class="info-label text-xs uppercase text-base-content/60 font-medium">Index</span>
+                <span id="box-info-index" class="info-value font-bold text-base-content">-</span>
+            </div>
+            <div class="info-item flex flex-col">
+                <span class="info-label text-xs uppercase text-base-content/60 font-medium">Area</span>
+                <span id="box-info-area" class="info-value font-bold text-base-content">-</span>
+            </div>
         </div>
-        <div class="info-item">
-            <span class="info-label">Index</span>
-            <span id="box-info-index" class="info-value">-</span>
+        <div class="mt-1">
+            <span class="info-label text-xs uppercase text-base-content/60 font-medium">Direct Link</span>
+            <div><a id="box-info-link" href="#" class="info-link link link-primary text-xs break-all">#</a></div>
         </div>
-        <div class="info-item">
-            <span class="info-label">Area</span>
-            <span id="box-info-area" class="info-value">-</span>
-        </div>
-    </div>
-    <div>
-        <span class="info-label">Direct Link</span>
-        <div><a id="box-info-link" href="#" class="info-link">#</a></div>
     </div>
 </div>
 
 <!-- Camera Matrix JSON State Panel -->
-<div id="cam-json-panel" class="glass-panel">
-    <div class="panel-header">
-        <span>Camera Matrix (CamJSON)</span>
-    </div>
-    <textarea id="cam-json-textarea" class="cam-textarea" placeholder="Paste or view camera matrix JSON..."></textarea>
-    <div class="panel-actions">
-        <button id="cam-json-copy-btn" class="btn-hud" type="button">Copy</button>
-        <button id="cam-json-apply-btn" class="btn-hud btn-accent" type="button">Apply</button>
+<div id="cam-json-panel" class="card bg-base-100/90 backdrop-blur-md border border-base-content/15 shadow-xl w-80 absolute bottom-6 left-6 z-20">
+    <div class="card-body p-3">
+        <div class="panel-header text-xs font-semibold text-base-content/70 mb-1 flex justify-between items-center">
+            <span>Camera Matrix (CamJSON)</span>
+        </div>
+        <textarea id="cam-json-textarea" class="cam-textarea textarea textarea-bordered textarea-xs font-mono w-full h-16 resize-none mb-2" placeholder="Kamera-Matrix JSON einfügen oder ansehen..."></textarea>
+        <div class="panel-actions flex justify-end gap-1.5">
+            <button id="cam-json-copy-btn" class="btn-hud btn btn-xs btn-ghost" type="button">Copy</button>
+            <button id="cam-json-apply-btn" class="btn-hud btn btn-xs btn-primary font-semibold" type="button">Apply</button>
+        </div>
     </div>
 </div>
 
 <!-- Hover Tooltip -->
-<div id="box-tooltip" class="d-none"></div>
+<div id="box-tooltip" class="badge badge-neutral shadow-lg fixed z-50 pointer-events-none d-none font-medium text-xs py-2 px-3"></div>
 
 <!-- Loading Overlay -->
-<div id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text">Loading Mediathek 3D Environment...</div>
+<div id="loading-overlay" class="fixed inset-0 bg-base-100/90 backdrop-blur-sm flex flex-col justify-center items-center z-50 gap-4">
+    <span class="spinner loading loading-spinner loading-lg text-primary"></span>
+    <div class="loading-text text-base font-medium text-base-content/80">Mediathek 3D Umgebung wird geladen...</div>
 </div>
 {{end}}

@@ -1,12 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de" data-theme="mediathek-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{.Title}}</title>
+    <!-- Early theme init script to prevent FOUC -->
+    <script src="{{.BaseURL}}static/js/theme-init.js"></script>
+    <!-- Tailwind CSS & DaisyUI stylesheets -->
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/tailwind.min.css">
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/daisyui.min.css">
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/daisyui-themes.min.css">
     <link rel="stylesheet" href="{{.BaseURL}}static/scss/mediathek3d.css">
+    <!-- HTMX 4 library -->
+    <script src="{{.BaseURL}}static/js/htmx-4.0.js"></script>
 </head>
-<body>
+<body class="bg-base-100 text-base-content overflow-hidden select-none">
     <!-- 3D Rendering Canvas Viewport -->
     <div id="renderer-container"></div>
 

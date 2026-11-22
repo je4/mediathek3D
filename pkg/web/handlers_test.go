@@ -317,6 +317,11 @@ func TestStaticFiles(t *testing.T) {
 
 	staticFiles := []string{
 		"/static/scss/mediathek3d.css",
+		"/static/css/tailwind.min.css",
+		"/static/css/daisyui.min.css",
+		"/static/css/daisyui-themes.min.css",
+		"/static/js/htmx-4.0.js",
+		"/static/js/theme-init.js",
 		"/static/js/mediathek-core.js",
 		"/static/js/mediathek-3d.js",
 		"/static/js/mediathek-app.js",
@@ -324,6 +329,7 @@ func TestStaticFiles(t *testing.T) {
 		"/static/js/modules/math.js",
 		"/static/js/modules/box-builder.js",
 		"/static/js/modules/spline-calculator.js",
+		"/static/js/modules/theme-manager.js",
 		"/static/js/modules/ui-controller.js",
 		"/static/js/three/three.module.js",
 		"/static/js/three/three.core.js",

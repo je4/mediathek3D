@@ -354,12 +354,24 @@ export class UIController {
      */
     showHelpModal(show = true) {
         if (!this.dom.helpModal) return;
-        if (show) {
-            this.dom.helpModal.style.display = 'flex';
-            this.dom.helpModal.classList.remove('d-none', 'hidden');
+        if (typeof this.dom.helpModal.showModal === 'function') {
+            if (show) {
+                if (!this.dom.helpModal.open) {
+                    this.dom.helpModal.showModal();
+                }
+            } else {
+                if (this.dom.helpModal.open) {
+                    this.dom.helpModal.close();
+                }
+            }
         } else {
-            this.dom.helpModal.style.display = 'none';
-            this.dom.helpModal.classList.add('d-none', 'hidden');
+            if (show) {
+                this.dom.helpModal.classList.add('modal-open');
+                this.dom.helpModal.classList.remove('d-none', 'hidden');
+            } else {
+                this.dom.helpModal.classList.remove('modal-open');
+                this.dom.helpModal.classList.add('d-none', 'hidden');
+            }
         }
     }
 

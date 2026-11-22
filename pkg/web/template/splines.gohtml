@@ -1,135 +1,143 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="mediathek-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{.Title}} - Splines & Kontrollpunkte</title>
+    <!-- Early theme init script to prevent FOUC -->
+    <script src="{{.BaseURL}}static/js/theme-init.js"></script>
+    <!-- Tailwind CSS & DaisyUI stylesheets -->
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/tailwind.min.css">
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/daisyui.min.css">
+    <link rel="stylesheet" href="{{.BaseURL}}static/css/daisyui-themes.min.css">
     <link rel="stylesheet" href="{{.BaseURL}}static/scss/mediathek3d.css">
+    <!-- HTMX 4 library -->
+    <script src="{{.BaseURL}}static/js/htmx-4.0.js"></script>
 </head>
-<body class="splines-page">
+<body class="splines-page bg-base-100 text-base-content overflow-hidden select-none">
     <!-- Top Header Navigation Bar -->
-    <header class="splines-header glass-panel">
-        <div class="splines-header-brand">
-            <span class="splines-logo-icon">📐</span>
-            <div class="splines-header-titles">
-                <h1 class="splines-title">HGK Mediathek 2D</h1>
-                <span class="splines-subtitle">Hintergrundbild, Kontrollpunkte & Catmull-Rom-Splines</span>
+    <header class="splines-header navbar bg-base-100/90 backdrop-blur-md border-b border-base-content/15 shadow-sm px-4 h-14 z-30">
+        <div class="splines-header-brand navbar-start flex items-center gap-2">
+            <span class="splines-logo-icon text-xl text-primary">📐</span>
+            <div class="splines-header-titles flex flex-col">
+                <h1 class="splines-title font-bold text-sm sm:text-base leading-tight">HGK Mediathek 2D</h1>
+                <span class="splines-subtitle text-xs text-base-content/60">Hintergrundbild, Kontrollpunkte & Splines</span>
             </div>
         </div>
 
-        <div class="splines-header-center">
-            <div id="coord-display" class="splines-coords-badge" title="Aktuelle Pixelkoordinaten auf dem 2048x2048 Grundriss">
-                <span class="coord-label">Cursor:</span>
-                <span id="coord-val" class="coord-value">X: 0 | Y: 0</span>
+        <div class="splines-header-center navbar-center flex items-center gap-2">
+            <div id="coord-display" class="splines-coords-badge badge badge-neutral badge-outline font-mono text-xs gap-1.5 p-2" title="Aktuelle Pixelkoordinaten auf dem 2048x2048 Grundriss">
+                <span class="coord-label opacity-70">Cursor:</span>
+                <span id="coord-val" class="coord-value font-semibold text-primary">X: 0 | Y: 0</span>
             </div>
-            <div id="selection-info" class="splines-selection-badge" style="display: none;">
+            <div id="selection-info" class="splines-selection-badge badge badge-primary gap-2 text-xs font-semibold p-2" style="display: none;">
                 <span id="selection-text"></span>
-                <button id="btn-clear-selection" class="btn-icon-sm" title="Auswahl aufheben">✕</button>
+                <button id="btn-clear-selection" class="btn-icon-sm btn btn-xs btn-ghost btn-circle" title="Auswahl aufheben">✕</button>
             </div>
         </div>
 
-        <div class="splines-header-actions">
-            <a href="{{.BaseURL}}" class="btn-primary-3d" title="Zurück zur interaktiven 3D-Ansicht">
+        <div class="splines-header-actions navbar-end flex items-center">
+            <a href="{{.BaseURL}}" class="btn-primary-3d btn btn-sm btn-primary gap-1 font-semibold" title="Zurück zur interaktiven 3D-Ansicht">
                 <span class="btn-icon">🏛️</span> 3D-Ansicht
             </a>
         </div>
     </header>
 
     <!-- Main Viewport Area -->
-    <main id="spline-canvas-container" class="splines-viewport">
-        <canvas id="spline-canvas"></canvas>
+    <main id="spline-canvas-container" class="splines-viewport relative w-full h-[calc(100vh-3.5rem)] overflow-hidden">
+        <canvas id="spline-canvas" class="w-full h-full block"></canvas>
 
         <!-- Floating Tooltip -->
-        <div id="spline-tooltip" class="spline-tooltip glass-panel" style="display: none;"></div>
+        <div id="spline-tooltip" class="spline-tooltip badge badge-neutral shadow-lg absolute z-50 pointer-events-none p-2 text-xs font-medium" style="display: none;"></div>
 
         <!-- Floating Zoom Controls -->
-        <div class="splines-zoom-controls glass-panel">
-            <button id="btn-zoom-in" class="zoom-btn" title="Vergrößern (Mausrad aufwärts)">+</button>
-            <button id="btn-zoom-out" class="zoom-btn" title="Verkleinern (Mausrad abwärts)">−</button>
-            <button id="btn-zoom-fit" class="zoom-btn zoom-btn-text" title="An Bildschirm anpassen">Fit</button>
-            <button id="btn-zoom-100" class="zoom-btn zoom-btn-text" title="100% Originalgröße (2048x2048)">1:1</button>
+        <div class="splines-zoom-controls join join-vertical absolute bottom-6 right-6 z-30 shadow-xl bg-base-100/85 backdrop-blur-md border border-base-content/15 rounded-box">
+            <button id="btn-zoom-in" class="zoom-btn btn btn-sm join-item btn-ghost text-base font-bold" title="Vergrössern (Mausrad aufwärts)">+</button>
+            <button id="btn-zoom-out" class="zoom-btn btn btn-sm join-item btn-ghost text-base font-bold" title="Verkleinern (Mausrad abwärts)">−</button>
+            <button id="btn-zoom-fit" class="zoom-btn zoom-btn-text btn btn-sm join-item btn-ghost text-xs" title="An Bildschirm anpassen">Fit</button>
+            <button id="btn-zoom-100" class="zoom-btn zoom-btn-text btn btn-sm join-item btn-ghost text-xs" title="100% Originalgrösse (2048x2048)">1:1</button>
         </div>
 
         <!-- Floating Sidebar Drawer: Layers & Shelves Filter -->
-        <aside id="splines-sidebar" class="splines-sidebar glass-panel">
-            <div class="sidebar-header">
-                <h2>Steuerung & Ebenen</h2>
-                <button id="btn-toggle-sidebar" class="btn-icon-toggle" title="Seitenleiste minimieren/maximieren">◀</button>
+        <aside id="splines-sidebar" class="splines-sidebar card bg-base-100/90 backdrop-blur-md border border-base-content/15 shadow-2xl absolute top-4 left-4 z-20 w-80 max-h-[calc(100%-2rem)] flex flex-col">
+            <div class="sidebar-header flex justify-between items-center p-3 border-b border-base-content/10">
+                <h2 class="font-bold text-sm text-base-content">Steuerung & Ebenen</h2>
+                <button id="btn-toggle-sidebar" class="btn-icon-toggle btn btn-xs btn-ghost btn-circle" title="Seitenleiste minimieren/maximieren">◀</button>
             </div>
 
-            <div class="sidebar-content">
+            <div class="sidebar-content p-3 space-y-4 overflow-y-auto">
                 <!-- Layer Settings -->
-                <section class="sidebar-section">
-                    <h3 class="section-title">Ebenen-Sichtbarkeit</h3>
+                <section class="sidebar-section space-y-2">
+                    <h3 class="section-title text-xs uppercase font-bold text-base-content/60 tracking-wider">Ebenen-Sichtbarkeit</h3>
                     <div class="control-row">
-                        <label class="control-label" for="chk-bg-image">
-                            <input type="checkbox" id="chk-bg-image" checked>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-bg-image">
+                            <input type="checkbox" id="chk-bg-image" class="checkbox checkbox-xs checkbox-primary" checked>
                             <span>Hintergrundbild (mt_background.png)</span>
                         </label>
                     </div>
-                    <div class="control-row opacity-row">
-                        <label for="range-bg-opacity" class="sub-label">Deckkraft:</label>
-                        <input type="range" id="range-bg-opacity" min="0" max="100" value="85">
-                        <span id="opacity-val" class="opacity-val">85%</span>
+                    <div class="control-row opacity-row flex items-center gap-2 text-xs">
+                        <label for="range-bg-opacity" class="sub-label opacity-70">Deckkraft:</label>
+                        <input type="range" id="range-bg-opacity" min="0" max="100" value="85" class="range range-xs range-primary flex-1">
+                        <span id="opacity-val" class="opacity-val font-mono w-8 text-right">85%</span>
                     </div>
                     <div class="control-row">
-                        <label class="control-label" for="chk-splines">
-                            <input type="checkbox" id="chk-splines" checked>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-splines">
+                            <input type="checkbox" id="chk-splines" class="checkbox checkbox-xs checkbox-primary" checked>
                             <span>Splines (Catmull-Rom-Kurven)</span>
                         </label>
                     </div>
                     <div class="control-row">
-                        <label class="control-label" for="chk-points">
-                            <input type="checkbox" id="chk-points" checked>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-points">
+                            <input type="checkbox" id="chk-points" class="checkbox checkbox-xs checkbox-primary" checked>
                             <span>Kontrollpunkte (kistendata.json)</span>
                         </label>
                     </div>
                     <div class="control-row">
-                        <label class="control-label" for="chk-point-labels">
-                            <input type="checkbox" id="chk-point-labels" checked>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-point-labels">
+                            <input type="checkbox" id="chk-point-labels" class="checkbox checkbox-xs checkbox-primary" checked>
                             <span>Punkt-Nummern (P1, P2...)</span>
                         </label>
                     </div>
                     <div class="control-row">
-                        <label class="control-label" for="chk-shelf-labels">
-                            <input type="checkbox" id="chk-shelf-labels" checked>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-shelf-labels">
+                            <input type="checkbox" id="chk-shelf-labels" class="checkbox checkbox-xs checkbox-primary" checked>
                             <span>Regal-Bezeichnungen (A, B...)</span>
                         </label>
                     </div>
                     <div class="control-row">
-                        <label class="control-label" for="chk-point-coords">
-                            <input type="checkbox" id="chk-point-coords">
-                            <span>Koordinaten (kistendata.json) an Punkten</span>
+                        <label class="control-label flex items-center gap-2 cursor-pointer text-xs" for="chk-point-coords">
+                            <input type="checkbox" id="chk-point-coords" class="checkbox checkbox-xs checkbox-primary">
+                            <span>Koordinaten (kistendata.json)</span>
                         </label>
                     </div>
                 </section>
 
                 <!-- Shelves List & Filter -->
-                <section class="sidebar-section shelves-section">
-                    <div class="section-header-flex">
-                        <h3 class="section-title">Regale (<span id="shelves-count">0</span>)</h3>
-                        <div class="btn-group-sm">
-                            <button id="btn-select-all" class="btn-text-sm" title="Alle Regale anzeigen">Alle</button>
-                            <button id="btn-deselect-all" class="btn-text-sm" title="Alle Regale ausblenden">Keine</button>
+                <section class="sidebar-section shelves-section space-y-2">
+                    <div class="section-header-flex flex justify-between items-center">
+                        <h3 class="section-title text-xs uppercase font-bold text-base-content/60 tracking-wider">Regale (<span id="shelves-count">0</span>)</h3>
+                        <div class="btn-group-sm flex gap-1">
+                            <button id="btn-select-all" class="btn-text-sm btn btn-xs btn-ghost" title="Alle Regale anzeigen">Alle</button>
+                            <button id="btn-deselect-all" class="btn-text-sm btn btn-xs btn-ghost" title="Alle Regale ausblenden">Keine</button>
                         </div>
                     </div>
 
                     <div class="search-input-wrap">
-                        <input type="text" id="shelf-search" placeholder="Regal oder Bereich filtern..." autocomplete="off">
+                        <input type="text" id="shelf-search" class="input input-xs input-bordered w-full" placeholder="Regal oder Bereich filtern..." autocomplete="off">
                     </div>
 
-                    <div id="shelves-list" class="shelves-list-container">
+                    <div id="shelves-list" class="shelves-list-container max-h-48 overflow-y-auto space-y-1">
                         <!-- Populated dynamically via JS -->
                     </div>
                 </section>
 
                 <!-- Selected Shelf Point Coordinates Detail View -->
-                <section id="shelf-detail-section" class="sidebar-section shelf-detail-section" style="display: none;">
-                    <div class="section-header-flex">
-                        <h3 class="section-title" id="detail-shelf-title">Regal-Details</h3>
-                        <button id="btn-close-detail" class="btn-icon-sm">✕</button>
+                <section id="shelf-detail-section" class="sidebar-section shelf-detail-section border-t border-base-content/10 pt-2 space-y-2" style="display: none;">
+                    <div class="section-header-flex flex justify-between items-center">
+                        <h3 class="section-title text-xs uppercase font-bold text-primary" id="detail-shelf-title">Regal-Details</h3>
+                        <button id="btn-close-detail" class="btn-icon-sm btn btn-xs btn-ghost btn-circle">✕</button>
                     </div>
-                    <div id="detail-points-table" class="points-table-wrap">
+                    <div id="detail-points-table" class="points-table-wrap max-h-40 overflow-y-auto">
                         <!-- Populated dynamically -->
                     </div>
                 </section>

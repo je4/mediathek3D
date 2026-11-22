@@ -4,15 +4,20 @@
 
 .top-hud {
     position: absolute;
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto !important;
+    max-width: calc(100vw - 24px);
     z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
     pointer-events: none;
+    min-height: auto;
+    padding: 0;
+    box-sizing: border-box;
 
     > * {
         pointer-events: auto;

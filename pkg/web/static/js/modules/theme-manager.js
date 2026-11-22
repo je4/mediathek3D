@@ -10,6 +10,150 @@
  */
 
 export const COLOR_THEMES = {
+    'mediathek-dark': {
+        id: 'mediathek-dark',
+        name: 'Mediathek Dunkel',
+        label: 'Mediathek Dunkel',
+        description: 'Nord Polar Night & Frost Palette für Dark Mode',
+        boxColor: 0xf4f5f7,
+        bottomColor: 0x1e222a,
+        boxColorHighlight: 0x88c0d0,
+        emissiveHighlight: 0x1e3a47,
+        emissiveIntensity: 0.45,
+        backgroundColor: 0x2e3440,
+        ui: {
+            bgDark: '#2e3440',
+            bgPanel: 'rgba(46, 52, 64, 0.88)',
+            bgPanelHover: 'rgba(67, 76, 94, 0.95)',
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderFocus: '#88c0d0',
+            accentColor: '#88c0d0',
+            accentHover: '#8fbcbb',
+            textPrimary: '#eceff4',
+            textSecondary: '#d8dee9',
+            textMuted: '#e5e9f0'
+        }
+    },
+    'mediathek-light': {
+        id: 'mediathek-light',
+        name: 'Mediathek Hell',
+        label: 'Mediathek Hell',
+        description: 'Nord Snow Storm Palette für Light Mode',
+        boxColor: 0xffffff,
+        bottomColor: 0xd8dee9,
+        boxColorHighlight: 0x365a82,
+        emissiveHighlight: 0x102538,
+        emissiveIntensity: 0.35,
+        backgroundColor: 0xe5e9f0,
+        ui: {
+            bgDark: '#e5e9f0',
+            bgPanel: 'rgba(236, 239, 244, 0.92)',
+            bgPanelHover: 'rgba(216, 222, 233, 0.98)',
+            borderColor: 'rgba(46, 52, 64, 0.18)',
+            borderFocus: '#365a82',
+            accentColor: '#365a82',
+            accentHover: '#465f7a',
+            textPrimary: '#2e3440',
+            textSecondary: '#4c566a',
+            textMuted: '#707e94'
+        }
+    },
+    'unibas-light': {
+        id: 'unibas-light',
+        name: 'Uni Basel Hell',
+        label: 'Uni Basel Hell',
+        description: 'Universität Basel Minze & Petrol',
+        boxColor: 0xffffff,
+        bottomColor: 0xd3e8e5,
+        boxColorHighlight: 0x075d56,
+        emissiveHighlight: 0x032b28,
+        emissiveIntensity: 0.35,
+        backgroundColor: 0xedf5f4,
+        ui: {
+            bgDark: '#edf5f4',
+            bgPanel: 'rgba(255, 255, 255, 0.92)',
+            bgPanelHover: 'rgba(237, 245, 244, 0.98)',
+            borderColor: 'rgba(7, 93, 86, 0.2)',
+            borderFocus: '#075d56',
+            accentColor: '#075d56',
+            accentHover: '#0c4946',
+            textPrimary: '#2d373c',
+            textSecondary: '#4a555a',
+            textMuted: '#718087'
+        }
+    },
+    'unibas-dark': {
+        id: 'unibas-dark',
+        name: 'Uni Basel Dunkel',
+        label: 'Uni Basel Dunkel',
+        description: 'Universität Basel Minze dunkel',
+        boxColor: 0xffffff,
+        bottomColor: 0x093b39,
+        boxColorHighlight: 0xa5d7d2,
+        emissiveHighlight: 0x052e2b,
+        emissiveIntensity: 0.45,
+        backgroundColor: 0x0c4946,
+        ui: {
+            bgDark: '#0c4946',
+            bgPanel: 'rgba(17, 94, 89, 0.9)',
+            bgPanelHover: 'rgba(12, 73, 70, 0.98)',
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderFocus: '#a5d7d2',
+            accentColor: '#a5d7d2',
+            accentHover: '#d7edeb',
+            textPrimary: '#ffffff',
+            textSecondary: '#d7edeb',
+            textMuted: '#a5d7d2'
+        }
+    },
+    'fhnw-light': {
+        id: 'fhnw-light',
+        name: 'FHNW Hell',
+        label: 'FHNW Hell',
+        description: 'FHNW Gelb & Hellgrau',
+        boxColor: 0xffffff,
+        bottomColor: 0xdedede,
+        boxColorHighlight: 0xfde70e,
+        emissiveHighlight: 0x4a4300,
+        emissiveIntensity: 0.35,
+        backgroundColor: 0xf2f2f2,
+        ui: {
+            bgDark: '#f2f2f2',
+            bgPanel: 'rgba(255, 255, 255, 0.92)',
+            bgPanelHover: 'rgba(242, 242, 242, 0.98)',
+            borderColor: 'rgba(0, 0, 0, 0.15)',
+            borderFocus: '#333333',
+            accentColor: '#333333',
+            accentHover: '#555555',
+            textPrimary: '#111111',
+            textSecondary: '#333333',
+            textMuted: '#666666'
+        }
+    },
+    'fhnw-dark': {
+        id: 'fhnw-dark',
+        name: 'FHNW Dunkel',
+        label: 'FHNW Dunkel',
+        description: 'FHNW Gelb & Anthrazit',
+        boxColor: 0xf4f5f7,
+        bottomColor: 0x242424,
+        boxColorHighlight: 0xfde70e,
+        emissiveHighlight: 0x4a4300,
+        emissiveIntensity: 0.45,
+        backgroundColor: 0x171717,
+        ui: {
+            bgDark: '#171717',
+            bgPanel: 'rgba(36, 36, 36, 0.9)',
+            bgPanelHover: 'rgba(56, 56, 56, 0.98)',
+            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderFocus: '#fde70e',
+            accentColor: '#fde70e',
+            accentHover: '#ffea2e',
+            textPrimary: '#ffffff',
+            textSecondary: '#dedede',
+            textMuted: '#888888'
+        }
+    },
     ocher: {
         id: 'ocher',
         name: 'Ocker-Lounge',
@@ -160,11 +304,23 @@ export class ThemeManager {
      * @returns {string}
      */
     _resolveThemeId(themeId) {
-        if (!themeId) return DEFAULT_THEME;
+        if (!themeId) {
+            if (typeof localStorage !== 'undefined') {
+                const stored = localStorage.getItem('rfid_theme') || localStorage.getItem('mediathek3d_theme');
+                if (stored && COLOR_THEMES[stored]) return stored;
+            }
+            return DEFAULT_THEME;
+        }
         const clean = themeId.toLowerCase().trim();
         if (COLOR_THEMES[clean]) return clean;
 
         // Aliases / keywords
+        if (clean.includes('mediathek-light') || clean.includes('nord-light')) return 'mediathek-light';
+        if (clean.includes('mediathek-dark') || clean.includes('nord-dark') || clean === 'mediathek') return 'mediathek-dark';
+        if (clean.includes('unibas-light') || (clean.includes('unibas') && clean.includes('light'))) return 'unibas-light';
+        if (clean.includes('unibas-dark') || clean === 'unibas') return 'unibas-dark';
+        if (clean.includes('fhnw-light') || (clean.includes('fhnw') && clean.includes('light'))) return 'fhnw-light';
+        if (clean.includes('fhnw-dark') || clean === 'fhnw') return 'fhnw-dark';
         if (clean.includes('ocker') || clean.includes('ocher') || clean.includes('yellow') || clean.includes('lounge')) return 'ocher';
         if (clean.includes('olive') || clean.includes('olivenhain') || clean.includes('khaki')) return 'olive';
         if (clean.includes('salbei') || clean.includes('sage') || clean.includes('green') || clean.includes('natur')) return 'sage';
@@ -185,7 +341,7 @@ export class ThemeManager {
     /**
      * Sets and applies a theme by ID.
      *
-     * @param {string} themeId - 'ocher', 'sage', 'olive', 'terracotta', or 'classic'
+     * @param {string} themeId
      * @param {boolean} [persist=true] - Whether to save to localStorage
      * @returns {Object} The applied theme configuration
      */
@@ -212,12 +368,16 @@ export class ThemeManager {
             this.ui.dom.themeSelect.value = resolvedId;
         }
 
-        // 5. Persist choice in browser localStorage
+        // 5. Persist choice in browser localStorage and cookies
         if (persist && typeof localStorage !== 'undefined') {
             try {
                 localStorage.setItem('mediathek3d_theme', resolvedId);
+                localStorage.setItem('rfid_theme', resolvedId);
+                if (typeof document !== 'undefined') {
+                    document.cookie = `rfid_theme=${encodeURIComponent(resolvedId)};path=/;max-age=31536000`;
+                }
             } catch (e) {
-                // Ignore localStorage errors (e.g. iframe privacy restrictions)
+                // Ignore localStorage errors
             }
         }
 
