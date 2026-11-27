@@ -1,7 +1,7 @@
 package config_test
 
 import (
-	"mediathek3d/pkg/config"
+	"github.com/je4/mediathek3D/pkg/config"
 	"os"
 	"testing"
 )

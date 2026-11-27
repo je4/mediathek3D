@@ -1,7 +1,7 @@
 package model_test
 
 import (
-	"mediathek3d/pkg/model"
+	"github.com/je4/mediathek3D/pkg/model"
 	"testing"
 )
 

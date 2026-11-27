@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"mediathek3d/pkg/config"
-	"mediathek3d/pkg/service"
-	"mediathek3d/pkg/web"
+	"github.com/je4/mediathek3D/pkg/config"
+	"github.com/je4/mediathek3D/pkg/service"
+	"github.com/je4/mediathek3D/pkg/web"
 )
 
 // Config defines options for the automated box snapshot generation.

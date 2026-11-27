@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"mediathek3d/pkg/model"
+	"github.com/je4/mediathek3D/pkg/model"
 	"sort"
 	"strconv"
 	"strings"

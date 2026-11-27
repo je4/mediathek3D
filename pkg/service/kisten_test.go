@@ -1,7 +1,7 @@
 package service_test
 
 import (
-	"mediathek3d/pkg/service"
+	"github.com/je4/mediathek3D/pkg/service"
 	"os"
 	"path/filepath"
 	"testing"

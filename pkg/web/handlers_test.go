@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"mediathek3d/pkg/config"
-	"mediathek3d/pkg/model"
-	"mediathek3d/pkg/service"
-	"mediathek3d/pkg/web"
+	"github.com/je4/mediathek3D/pkg/config"
+	"github.com/je4/mediathek3D/pkg/model"
+	"github.com/je4/mediathek3D/pkg/service"
+	"github.com/je4/mediathek3D/pkg/web"
 )
 
 func setupTestServer(t *testing.T) (*web.Server, service.KistenService) {

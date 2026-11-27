@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"mediathek3d/pkg/config"
-	"mediathek3d/pkg/service"
+	"github.com/je4/mediathek3D/pkg/config"
+	"github.com/je4/mediathek3D/pkg/service"
 )
 
 // PageData represents the context passed into HTML templates during rendering.

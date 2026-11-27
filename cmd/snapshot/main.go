@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"mediathek3d/pkg/snapshot"
+	"github.com/je4/mediathek3D/pkg/snapshot"
 )
 
 func main() {

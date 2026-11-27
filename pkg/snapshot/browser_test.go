@@ -3,7 +3,7 @@ package snapshot_test
 import (
 	"testing"
 
-	"mediathek3d/pkg/snapshot"
+	"github.com/je4/mediathek3D/pkg/snapshot"
 )
 
 func TestFindBrowser(t *testing.T) {

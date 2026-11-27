@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"mediathek3d/pkg/config"
-	"mediathek3d/pkg/service"
+	"github.com/je4/mediathek3D/pkg/config"
+	"github.com/je4/mediathek3D/pkg/service"
 )
 
 // Server wraps the HTTP server instance and router configuration.
